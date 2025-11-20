@@ -1,0 +1,80 @@
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #1a1f3a 0%, #2d3561 100%);
+}
+
+.app-header {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.app-header h1 {
+  margin: 0;
+  color: #333;
+  font-size: 2rem;
+}
+
+.app-header p {
+  margin: 0.5rem 0 0 0;
+  color: #666;
+}
+
+.app-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  padding: 1rem;
+  overflow: hidden;
+}
+
+.upload-section {
+  width: 100%;
+  max-width: 600px;
+}
+
+.chat-section {
+  width: 100%;
+  max-width: 1200px;
+  height: calc(100vh - 160px);
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 1rem;
+  border-radius: 8px 8px 0 0;
+  margin-bottom: 1rem;
+}
+
+.back-button {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.back-button:hover {
+  background: #5568d3;
+}
+
+.language-selector-section {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+

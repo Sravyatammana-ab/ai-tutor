@@ -1,0 +1,27 @@
+.message-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding-bottom: 1rem; /* Extra padding at bottom for scrolling */
+  padding-top: 0.5rem; /* Extra top padding to ensure first message is visible */
+}
+
+.history-loading {
+  text-align: center;
+  color: #4a5568;
+  font-size: 0.9rem;
+  padding: 1rem 0;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+}
+
+.empty-state p {
+  margin: 0.5rem 0;
+  font-size: 1.1rem;
+}
+
+

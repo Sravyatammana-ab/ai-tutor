@@ -1,0 +1,145 @@
+.chat-interface {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100%;
+  flex: 1;
+  min-height: 0;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  position: relative;
+}
+
+.chat-context-bar {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #edf2f7;
+  background: #fffef8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.chat-context-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #718096;
+  margin-bottom: 0.25rem;
+}
+
+.chat-context-title {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #1a202c;
+}
+
+.chat-context-meta {
+  font-size: 0.85rem;
+  color: #4a5568;
+  background: #edf2f7;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1.5rem;
+  padding-bottom: 6rem; /* Space for sticky input */
+  padding-top: 2rem; /* Extra top padding to ensure first message is visible */
+  background: #f7fafc;
+  min-height: 0;
+  max-height: none; /* Let flex handle height */
+  scroll-behavior: smooth;
+  /* Enable smooth scrolling and better scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 #f7fafc;
+  /* Ensure content is always scrollable */
+  overscroll-behavior: contain;
+  /* Ensure all content is accessible */
+  -webkit-overflow-scrolling: touch;
+  /* Ensure first message is visible when scrolled to top */
+  scroll-padding-top: 1rem;
+}
+
+.chat-messages::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+  background: #f7fafc;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 4px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}
+
+.chat-input-section {
+  border-top: 1px solid #e2e8f0;
+  padding: 1rem;
+  background: white;
+  flex-shrink: 0; /* Don't shrink */
+  z-index: 10;
+  position: sticky;
+  bottom: 0;
+  box-shadow: 0 -6px 18px rgba(15, 23, 42, 0.08);
+}
+
+.suggested-questions {
+  margin-bottom: 0.75rem;
+}
+
+.suggestions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.35rem;
+}
+
+.suggestions-header p {
+  font-size: 0.85rem;
+  color: #4a5568;
+  margin: 0;
+}
+
+.suggestions-toggle {
+  background: none;
+  border: none;
+  color: #5d5fef;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0.1rem 0.25rem;
+}
+
+.question-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.suggested-question-btn {
+  padding: 0.5rem 1rem;
+  background: #edf2f7;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.3s;
+}
+
+.suggested-question-btn:hover {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+

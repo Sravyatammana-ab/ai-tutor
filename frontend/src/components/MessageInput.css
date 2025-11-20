@@ -1,0 +1,54 @@
+.message-input {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.message-textarea {
+  flex: 1;
+  padding: 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  resize: none;
+  min-height: 50px;
+  max-height: 150px;
+  transition: border-color 0.3s;
+}
+
+.message-textarea:focus {
+  outline: none;
+  border-color: #1a1f3a;
+}
+
+.message-textarea:disabled {
+  background: #f7fafc;
+  cursor: not-allowed;
+}
+
+.send-button {
+  padding: 1rem 2rem;
+  background: #1a1f3a;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.3s;
+  min-width: 100px;
+}
+
+.send-button:hover:not(:disabled) {
+  background: #2d3561;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.send-button:disabled {
+  background: #cbd5e0;
+  cursor: not-allowed;
+}
+
+
