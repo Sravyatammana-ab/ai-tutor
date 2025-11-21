@@ -3,6 +3,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .language-selector label {
@@ -30,6 +31,23 @@
 .language-select:focus {
   outline: none;
   border-color: #667eea;
+}
+
+@media (max-width: 600px) {
+  .language-selector {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.35rem;
+  }
+
+  .language-selector label {
+    width: 100%;
+    text-align: left;
+  }
+
+  .language-select {
+    width: 100%;
+  }
 }
 
 

@@ -109,7 +109,7 @@ function Dashboard() {
             <img src={logoImage} alt="Cerevyn SOLUTIONS" className="dashboard-logo" />
           </div>
           <div className="header-center">
-            <h1>🤖 AI Tutor</h1>
+            <h1>CERE-SHIKSHAK</h1>
             <p>Learn from your textbooks with AI assistance</p>
           </div>
           <div className="header-actions">
