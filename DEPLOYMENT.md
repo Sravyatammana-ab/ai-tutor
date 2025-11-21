@@ -55,7 +55,9 @@ Fill in the following settings:
 - **Root Directory**: `backend` (important!)
 - **Runtime**: `Python 3`
 - **Build Command**: `pip install -r requirements.txt`
-- **Start Command**: Leave empty (Render will use the Procfile)
+- **Start Command**: 
+  - **Recommended**: Leave it **EMPTY** (Render will automatically use the `Procfile`)
+  - **Alternative**: If you want to specify manually: `gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120`
 
 ### 2.3 Set Environment Variables
 

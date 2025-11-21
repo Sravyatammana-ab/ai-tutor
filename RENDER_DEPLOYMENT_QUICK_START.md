@@ -19,7 +19,9 @@ git push
    - **Root Directory**: `backend`
    - **Runtime**: `Python 3`
    - **Build Command**: `pip install -r requirements.txt`
-   - **Start Command**: (leave empty - uses Procfile)
+   - **Start Command**: 
+     - **Option 1 (Recommended)**: Leave it **EMPTY** - Render will automatically use the `Procfile`
+     - **Option 2**: If you want to specify manually, use: `gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120`
 
 ### 3. Add Environment Variables
 
