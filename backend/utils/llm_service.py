@@ -8,7 +8,7 @@ SYSTEM_PROMPT = """You are an AI Tutor. You MUST answer strictly and ONLY using 
 
 If the answer does not exist in the textbook, say:
 
-"This information is not available in the textbook."
+"Sorry, the textbook does not contain this information."
 
 Do not guess. Do not hallucinate. Do not add extra information beyond the textbook context."""
 
@@ -45,7 +45,7 @@ class LLMService:
         try:
             # If no context, return immediately
             if not context or not context.strip():
-                return "This information is not available in the textbook."
+                return "Sorry, the textbook does not contain this information."
             
             # Map language codes to language names for the prompt
             language_map = {

@@ -247,11 +247,7 @@ def send_message():
                 print(f"Fallback search failed: {e}")
         
         context_available = bool(retrieved_context and retrieved_context.strip())
-        unavailable_reply = (
-            "I carefully reviewed all the extracted chapters from this textbook but could not find information that matches your question. "
-            "This typically happens when the requested topic is not covered in the uploaded book. "
-            "Please try asking about another concept from this textbook."
-        )
+        unavailable_reply = "Sorry, the textbook does not contain this information."
         
         # Helper: heuristic responses for chapter/unit queries
         user_message_lower = user_message.lower()

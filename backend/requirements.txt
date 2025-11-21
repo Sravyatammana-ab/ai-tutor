@@ -10,5 +10,8 @@ langchain-text-splitters>=1.0.0
 azure-ai-documentintelligence>=1.0.0
 azure-cognitiveservices-speech>=1.32.0
 requests>=2.31.0
+gtts>=2.5.0
+pydub>=0.25.1
+gunicorn==21.2.0
 
 
