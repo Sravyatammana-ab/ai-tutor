@@ -38,17 +38,18 @@ class QdrantService:
     def create_collection_if_not_exists(self) -> None:
         collections = self.client.get_collections()
         names = [collection.name for collection in collections.collections]
-        if self.collection_name in names:
-            return
+        if self.collection_name not in names:
+            self.client.create_collection(
+                collection_name=self.collection_name,
+                vectors_config=VectorParams(
+                    size=self.vector_size,
+                    distance=Distance.COSINE,
+                ),
+            )
 
-        self.client.create_collection(
-            collection_name=self.collection_name,
-            vectors_config=VectorParams(
-                size=self.vector_size,
-                distance=Distance.COSINE,
-            ),
-        )
+        # Ensure required payload indexes exist (id + hash)
         self.ensure_payload_index("document_id")
+        self.ensure_payload_index("file_hash")
 
     def ensure_payload_index(self, field_name: str, field_type: PayloadSchemaType = PayloadSchemaType.KEYWORD) -> None:
         try:
