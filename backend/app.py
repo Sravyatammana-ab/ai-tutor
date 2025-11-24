@@ -17,7 +17,8 @@ app.config.from_object(Config)
 allowed_origins = [
     "http://localhost:3000",
     "https://cereshikshak.cerevyn.in",
-    "https://cerevyn.in"
+    "https://cerevyn.in",
+    "https://ai-tutor-frontend-domain-if-any.com"
 ]
 
 CORS(app,
