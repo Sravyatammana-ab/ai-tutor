@@ -12,19 +12,14 @@ from config import Config
 
 upload_bp = Blueprint('upload', __name__)
 
-# Reuse heavy services across requests to keep memory low
-document_parser = DocumentParser()
-qdrant_service = QdrantService()
-qdrant_service.create_collection_if_not_exists()
-
 @upload_bp.route('/document', methods=['POST', 'OPTIONS'])
 def upload_document():
-    """
-    Handle document upload, parse, chunk, generate embeddings, and store in Qdrant
-    Includes duplicate detection based on file hash
-    """
+    """Upload → Parse → Chunk → Embed → Store"""
+    
+    # Handle preflight
     if request.method == 'OPTIONS':
         return ('', 204)
+    
     try:
         if 'file' not in request.files:
             return jsonify({'error': 'No file provided'}), 400
@@ -33,217 +28,136 @@ def upload_document():
         if file.filename == '':
             return jsonify({'error': 'No file selected'}), 400
         
-        # Validate file type
         filename = secure_filename(file.filename)
         file_ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+        
         if file_ext not in Config.ALLOWED_EXTENSIONS:
             return jsonify({'error': f'Invalid file type. Allowed types: {Config.ALLOWED_EXTENSIONS}'}), 400
         
-        # Save file temporarily to compute hash
-        temp_document_id = str(uuid.uuid4())
-        temp_file_path = os.path.join(Config.UPLOAD_FOLDER, f"temp_{temp_document_id}.{file_ext}")
-        file.save(temp_file_path)
-        
-        # Compute file hash for duplicate detection
-        file_hash = compute_file_hash(temp_file_path)
-        
-        # Search for existing document with same hash
+        # Save temporary file to compute hash
+        temp_id = str(uuid.uuid4())
+        temp_path = os.path.join(Config.UPLOAD_FOLDER, f"temp_{temp_id}.{file_ext}")
+        file.save(temp_path)
+
+        # Compute file hash
+        file_hash = compute_file_hash(temp_path)
+
+        # Lazy load Qdrant on demand (to avoid memory crash)
+        qdrant_service = QdrantService()
+        qdrant_service.create_collection_if_not_exists()
+
         existing_docs = qdrant_service.search_by_hash(file_hash)
-        
+
         if existing_docs:
-            # Document already exists
-            existing_doc = existing_docs[0]
-            existing_document_id = existing_doc.get('document_id')
-            existing_filename = existing_doc.get('filename', filename)
-            
-            # Delete temp file
-            try:
-                os.remove(temp_file_path)
-            except:
-                pass
-            
+            existing = existing_docs[0]
+            try: os.remove(temp_path)
+            except: pass
+
             return jsonify({
                 'success': True,
                 'duplicate': True,
-                'existing_document_id': existing_document_id,
-                'existing_filename': existing_filename,
-                'message': 'This textbook already exists in the system.'
+                'existing_document_id': existing['document_id'],
+                'existing_filename': existing.get('filename', filename)
             }), 200
         
-        # Check if user wants to reprocess (from request)
+        # Reprocess check
         reprocess = request.form.get('reprocess', 'false').lower() == 'true'
-        
         if reprocess:
-            # Delete old embeddings for this hash (if any)
             qdrant_service.delete_by_hash(file_hash)
-        
-        # Generate unique document ID
+
         document_id = str(uuid.uuid4())
-        file_path = os.path.join(Config.UPLOAD_FOLDER, f"{document_id}.{file_ext}")
-        os.rename(temp_file_path, file_path)
-        
-        # Parse document using Azure Document Intelligence for PDFs
+        final_path = os.path.join(Config.UPLOAD_FOLDER, f"{document_id}.{file_ext}")
+        os.rename(temp_path, final_path)
+
+        # Lazy-load Document Parser to avoid startup crash
+        document_parser = DocumentParser()
+
         try:
-            text_content, metadata = document_parser.parse_document(file_path, file_ext)
-        except ValueError as parse_error:
-            import traceback
-            error_details = str(parse_error)
-            print(f"Azure Document Intelligence extraction error: {error_details}")
-            print(f"Traceback: {traceback.format_exc()}")
-            # Clean up file
-            try:
-                os.remove(file_path)
-            except:
-                pass
-            return jsonify({'error': f'Failed to extract text: {error_details}'}), 400
-        except Exception as parse_error:
-            import traceback
-            error_details = str(parse_error)
-            print(f"Unexpected Azure Document Intelligence error: {error_details}")
-            print(f"Traceback: {traceback.format_exc()}")
-            # Clean up file
-            try:
-                os.remove(file_path)
-            except:
-                pass
-            return jsonify({'error': f'Failed to extract text: {error_details}'}), 500
-        
-        if not text_content or not text_content.strip():
-            try:
-                os.remove(file_path)
-            except:
-                pass
-            return jsonify({'error': 'Failed to extract text - document appears empty or contains no readable text'}), 400
-        
-        # Chunk text using LangChain with metadata
+            text_content, metadata = document_parser.parse_document(final_path, file_ext)
+        except Exception as e:
+            try: os.remove(final_path)
+            except: pass
+            return jsonify({'error': f'Failed to extract text: {str(e)}'}), 400
+
+        if not text_content.strip():
+            try: os.remove(final_path)
+            except: pass
+            return jsonify({'error': 'File contains no readable text'}), 400
+
+        # Chunk text
         chunks = document_parser.chunk_text(
             text_content,
             chunk_size=Config.CHUNK_SIZE,
             chunk_overlap=Config.CHUNK_OVERLAP,
             metadata=metadata
         )
-        
+
         if not chunks:
-            try:
-                os.remove(file_path)
-            except:
-                pass
+            try: os.remove(final_path)
+            except: pass
             return jsonify({'error': 'Failed to chunk document'}), 500
-        
-        # Generate embeddings and store in Qdrant
+
+        # Lazy-load embedding service
         embedding_service = EmbeddingService()
-        
-        # Process chunks and store embeddings with enhanced metadata
-        page_count = metadata.get('page_count', 1)
+
         total_chars = len(text_content)
-        chapter_count = metadata.get('chapter_count')
-        unit_count = metadata.get('unit_count')
-        
+        page_count = metadata.get('page_count', 1)
+
+        stored = 0
         pending_points = []
-        stored_vectors = 0
+
         for chunk in chunks:
             embedding = embedding_service.generate_embedding(chunk['text'])
             if not embedding:
                 continue
-            
-            # Estimate page number based on position in text
-            page_number = None
-            if page_count > 1 and total_chars > 0:
-                chunk_idx = chunk['chunk_index']
-                position_ratio = chunk_idx / max(1, len(chunks) - 1) if len(chunks) > 1 else 0
-                page_number = max(1, min(page_count, ceil(position_ratio * page_count)))
-            elif page_count == 1:
+
+            # Estimate page number
+            idx = chunk['chunk_index']
+            if len(chunks) > 1:
+                ratio = idx / (len(chunks) - 1)
+                page_number = max(1, min(page_count, ceil(ratio * page_count)))
+            else:
                 page_number = 1
-            
-            # Build enhanced payload with all metadata
+
             payload = {
                 'document_id': document_id,
                 'file_hash': file_hash,
                 'filename': filename,
-                'source': metadata.get('source', 'unknown'),
                 'text': chunk['text'],
                 'page': page_number,
                 'chunk_index': chunk['chunk_index']
             }
-            
-            # Add chapter/unit metadata if available
-            if chunk.get('chapter_number'):
-                payload['chapter_number'] = chunk['chapter_number']
-            if chunk.get('chapter_title'):
-                payload['chapter_title'] = chunk['chapter_title']
-            if chunk.get('unit_number'):
-                payload['unit_number'] = chunk['unit_number']
-            if chunk.get('unit_title'):
-                payload['unit_title'] = chunk['unit_title']
-            
-            # Add document-level metadata for easy retrieval
-            if chapter_count is not None:
-                payload['document_chapter_count'] = chapter_count
-            if unit_count is not None:
-                payload['document_unit_count'] = unit_count
-            
+
             pending_points.append({
                 'id': str(uuid.uuid4()),
                 'vector': embedding,
                 'payload': payload
             })
-            
+
             if len(pending_points) >= 48:
-                try:
-                    qdrant_service.upsert_points_in_batches(pending_points, batch_size=48)
-                    stored_vectors += len(pending_points)
-                    pending_points = []
-                except Exception as exc:
-                    try:
-                        os.remove(file_path)
-                    except:
-                        pass
-                    return jsonify({'error': f'Failed to store embeddings: {exc}'}), 500
-        
-        if pending_points:
-            try:
                 qdrant_service.upsert_points_in_batches(pending_points, batch_size=48)
-                stored_vectors += len(pending_points)
-            except Exception as exc:
-                try:
-                    os.remove(file_path)
-                except:
-                    pass
-                return jsonify({'error': f'Failed to store embeddings: {exc}'}), 500
-        
-        if stored_vectors == 0:
-            try:
-                os.remove(file_path)
-            except:
-                pass
-            return jsonify({'error': 'Failed to generate embeddings for document'}), 500
-        
+                stored += len(pending_points)
+                pending_points = []
+
+        if pending_points:
+            qdrant_service.upsert_points_in_batches(pending_points, batch_size=48)
+            stored += len(pending_points)
+
+        if stored == 0:
+            try: os.remove(final_path)
+            except: pass
+            return jsonify({'error': 'Failed to generate embeddings'}), 500
+
         return jsonify({
             'success': True,
             'document_id': document_id,
             'filename': filename,
-            'chunks_processed': stored_vectors,
+            'stored_chunks': stored,
             'total_chunks': len(chunks),
-            'chapter_count': chapter_count,
-            'unit_count': unit_count,
-            'file_hash': file_hash,
-            'message': 'Document uploaded and processed successfully'
+            'message': 'Document processed successfully'
         }), 200
-        
+
     except Exception as e:
         import traceback
-        print(f"Error in upload_document: {e}")
-        print(f"Traceback: {traceback.format_exc()}")
+        print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
-
-
-@upload_bp.after_request
-def add_upload_cors_headers(response):
-    origin = request.headers.get('Origin')
-    if origin in Config.FRONTEND_ALLOWED_ORIGINS:
-        response.headers['Access-Control-Allow-Origin'] = origin
-        response.headers['Vary'] = 'Origin'
-    response.headers['Access-Control-Allow-Credentials'] = 'true'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept'
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
-    return response

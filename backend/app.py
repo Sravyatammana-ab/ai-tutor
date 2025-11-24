@@ -1,30 +1,20 @@
-from flask import Flask, request, jsonify, send_file
-from flask_cors import CORS
 import os
-from werkzeug.utils import secure_filename
-import uuid
-from datetime import datetime
-
+from flask import Flask, jsonify
+from flask_cors import CORS
+from config import Config
 from routes.upload import upload_bp
 from routes.chat import chat_bp
 from routes.audio import audio_bp
-from config import Config
 
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# Enable CORS globally for all routes with specific allowed origins
+# parse allowed origins in config (list or "*")
 allowed_origins = Config.FRONTEND_ALLOWED_ORIGINS
 
+# Use Flask-CORS only (no after_request manual headers)
 CORS(app,
-     resources={r"/*": {
-         "origins": allowed_origins,
-         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-         "allow_headers": ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
-         "expose_headers": ["Content-Type", "Content-Length"],
-         "supports_credentials": True,
-         "max_age": 3600
-     }},
+     resources={r"/*": {"origins": allowed_origins}},
      supports_credentials=True)
 
 # Register blueprints
@@ -52,25 +42,9 @@ def root():
 
 @app.route('/api/health', methods=['GET', 'OPTIONS'])
 def health_check():
-    """Health check endpoint with CORS support"""
     return jsonify({'status': 'healthy', 'message': 'AI Tutor API is running'})
-
-
-@app.after_request
-def add_cors_headers(response):
-    """Ensure every response carries the necessary CORS headers."""
-    origin = request.headers.get('Origin')
-    if origin in allowed_origins:
-        response.headers['Access-Control-Allow-Origin'] = origin
-        response.headers['Vary'] = 'Origin'
-    response.headers['Access-Control-Allow-Credentials'] = 'true'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept'
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
-    return response
-
+    
 if __name__ == '__main__':
-    # Bind to Render-provided PORT (defaults to 5000 locally) with debug disabled for production
     port = int(os.environ.get("PORT", 5000))
+    # For production Render/Gunicorn, app.run won't be used; still fine locally.
     app.run(debug=False, host='0.0.0.0', port=port, use_reloader=False)
-
-
