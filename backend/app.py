@@ -14,12 +14,7 @@ app = Flask(__name__)
 app.config.from_object(Config)
 
 # Enable CORS globally for all routes with specific allowed origins
-allowed_origins = [
-    "http://localhost:3000",
-    "https://cereshikshak.cerevyn.in",
-    "https://cerevyn.in",
-    "https://ai-tutor-frontend-domain-if-any.com"
-]
+allowed_origins = Config.FRONTEND_ALLOWED_ORIGINS
 
 CORS(app,
      resources={r"/*": {
@@ -60,9 +55,22 @@ def health_check():
     """Health check endpoint with CORS support"""
     return jsonify({'status': 'healthy', 'message': 'AI Tutor API is running'})
 
+
+@app.after_request
+def add_cors_headers(response):
+    """Ensure every response carries the necessary CORS headers."""
+    origin = request.headers.get('Origin')
+    if origin in allowed_origins:
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Vary'] = 'Origin'
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
+    return response
+
 if __name__ == '__main__':
-    # Disable the Werkzeug auto-reloader so changes inside the virtualenv (e.g. pip installs)
-    # don't trigger endless restart loops while still keeping debug features enabled.
-    app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)
+    # Bind to Render-provided PORT (defaults to 5000 locally) with debug disabled for production
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=False, host='0.0.0.0', port=port, use_reloader=False)
 
 

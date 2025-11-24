@@ -18,6 +18,8 @@ from config import Config
 
 
 class QdrantService:
+    _shared_client: Optional[QdrantClient] = None
+    _collection_initialized: bool = False
     """Wrapper around Qdrant client with a couple of convenience helpers."""
 
     def __init__(self) -> None:
@@ -28,28 +30,38 @@ class QdrantService:
         if qdrant_url.endswith(":6333"):
             qdrant_url = qdrant_url[:-5]
 
-        self.client = QdrantClient(
-            url=qdrant_url,
-            api_key=Config.QDRANT_API_KEY or None,
-        )
+        if QdrantService._shared_client is None:
+            QdrantService._shared_client = QdrantClient(
+                url=qdrant_url,
+                api_key=Config.QDRANT_API_KEY or None,
+            )
+
+        self.client = QdrantService._shared_client
         self.collection_name = Config.QDRANT_COLLECTION_NAME
         self.vector_size = Config.QDRANT_VECTOR_SIZE or 1536
+        self.vector_name = Config.QDRANT_VECTOR_NAME or "text_vector"
 
     def create_collection_if_not_exists(self) -> None:
+        if QdrantService._collection_initialized:
+            return
+
         collections = self.client.get_collections()
         names = [collection.name for collection in collections.collections]
         if self.collection_name not in names:
             self.client.create_collection(
                 collection_name=self.collection_name,
-                vectors_config=VectorParams(
-                    size=self.vector_size,
-                    distance=Distance.COSINE,
-                ),
+                vectors_config={
+                    self.vector_name: VectorParams(
+                        size=self.vector_size,
+                        distance=Distance.COSINE,
+                    )
+                },
             )
 
         # Ensure required payload indexes exist (id + hash)
         self.ensure_payload_index("document_id")
         self.ensure_payload_index("file_hash")
+        QdrantService._collection_initialized = True
 
     def ensure_payload_index(self, field_name: str, field_type: PayloadSchemaType = PayloadSchemaType.KEYWORD) -> None:
         try:
@@ -71,7 +83,11 @@ class QdrantService:
             return
 
         structs = [
-            PointStruct(id=point["id"], vector=point["vector"], payload=point["payload"])
+            PointStruct(
+                id=point["id"],
+                vector={self.vector_name: point["vector"]},
+                payload=point["payload"]
+            )
             for point in points
         ]
         self.client.upsert(
@@ -126,6 +142,7 @@ class QdrantService:
             query_filter=query_filter,
             with_payload=True,
             with_vectors=False,
+            vector_name=self.vector_name,
         )
 
         formatted = []

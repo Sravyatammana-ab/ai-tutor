@@ -69,6 +69,14 @@ function Sidebar({ documentName, sessionId, isOpen, onToggle }) {
         <div className="sidebar-content">
           <div className="sidebar-header">
             <h3>Session Info</h3>
+            {/* Close button for mobile */}
+            <button 
+              className="sidebar-close-btn"
+              onClick={onToggle}
+              aria-label="Close sidebar"
+            >
+              ←
+            </button>
           </div>
           
           <div className="sidebar-section">

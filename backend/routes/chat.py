@@ -69,11 +69,13 @@ def get_translator_service():
     return translator_service
 
 
-@chat_bp.route('/message', methods=['POST'])
+@chat_bp.route('/message', methods=['POST', 'OPTIONS'])
 def send_message():
     """
     Handle user message, retrieve context, generate response, and convert to speech
     """
+    if request.method == 'OPTIONS':
+        return ('', 204)
     try:
         data = request.json
         user_message = (data.get('message') or '').strip()
@@ -526,3 +528,15 @@ def get_conversation_history(session_id):
             return jsonify({'success': True, 'history': history}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@chat_bp.after_request
+def add_chat_cors_headers(response):
+    origin = request.headers.get('Origin')
+    if origin in Config.FRONTEND_ALLOWED_ORIGINS:
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Vary'] = 'Origin'
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
+    return response

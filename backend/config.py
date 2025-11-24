@@ -26,10 +26,19 @@ class Config:
     OPENAI_CHAT_MODEL = _get_env('OPENAI_CHAT_MODEL', 'gpt-4o-mini')
     
     # Qdrant Configuration
-    QDRANT_URL = _get_env('QDRANT_URL')
-    QDRANT_API_KEY = _get_env('QDRANT_API_KEY')
+    QDRANT_URL = _get_env('QDRANT_URL', 'https://762110dc-0a6a-4ec3-b9b2-61269fcdbb17.us-east-1-1.aws.cloud.qdrant.io:6333')
+    QDRANT_API_KEY = _get_env('QDRANT_API_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.Omgo7N7N9yq0WldTlUSUrHsoN2utqNqffazZkUKDXCA')
     QDRANT_COLLECTION_NAME = _get_env('QDRANT_COLLECTION_NAME', 'ai_tutor_documents')
     QDRANT_VECTOR_SIZE = int(_get_env('QDRANT_VECTOR_SIZE', 1536))
+    QDRANT_VECTOR_NAME = _get_env('QDRANT_VECTOR_NAME', 'text_vector')
+
+    # Frontend / CORS configuration
+    FRONTEND_ALLOWED_ORIGINS = [
+        "http://localhost:3000",
+        "https://cereshikshak.cerevyn.com",
+        "https://cerevyn.com",
+        "https://ai-tutor-bknj.onrender.com"
+    ]
     
     # Supabase Configuration
     SUPABASE_URL = _get_env('SUPABASE_URL')

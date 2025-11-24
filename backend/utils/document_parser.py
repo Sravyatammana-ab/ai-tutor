@@ -81,6 +81,31 @@ def detect_chapters_and_units(text: str) -> Dict:
     }
 
 
+_azure_service = None
+
+
+def get_azure_service():
+    """
+    Lazily create a single Azure Document Intelligence client.
+    Prevents re-initializing heavy SDK objects per request.
+    """
+    global _azure_service
+    if _azure_service is not None:
+        return _azure_service
+    if not AzureOCRService:
+        return None
+    try:
+        _azure_service = AzureOCRService()
+        print("Azure Document Intelligence service initialized successfully")
+    except Exception as e:
+        import traceback
+        print(f"Warning: Azure Document Intelligence service initialization failed: {e}")
+        print(f"Traceback: {traceback.format_exc()}")
+        print("PDF extraction will not be available. Please configure AZURE_ENDPOINT and AZURE_KEY in your .env file.")
+        _azure_service = None
+    return _azure_service
+
+
 class DocumentParser:
     """Parse PDF and DOCX documents and chunk text using LangChain"""
     
@@ -93,17 +118,8 @@ class DocumentParser:
             separators=["\n\n", "\n", ".", "!", "?"]
         )
         
-        # Initialize Azure Document Intelligence service for PDFs
+        # Azure Document Intelligence service will be lazy-loaded
         self.azure_ocr_service = None
-        if AzureOCRService:
-            try:
-                self.azure_ocr_service = AzureOCRService()
-                print("Azure Document Intelligence service initialized successfully")
-            except Exception as e:
-                import traceback
-                print(f"Warning: Azure Document Intelligence service initialization failed: {e}")
-                print(f"Traceback: {traceback.format_exc()}")
-                print("PDF extraction will not be available. Please configure AZURE_ENDPOINT and AZURE_KEY in your .env file.")
     
     def parse_document(self, file_path: str, file_ext: str) -> Tuple[str, Dict]:
         """
@@ -132,6 +148,8 @@ class DocumentParser:
     
     def _parse_pdf(self, file_path: str, metadata: Dict) -> Tuple[str, Dict]:
         """Parse PDF using Azure Document Intelligence"""
+        if not self.azure_ocr_service:
+            self.azure_ocr_service = get_azure_service()
         if not self.azure_ocr_service:
             raise ValueError(
                 "Azure Document Intelligence service is not available. "

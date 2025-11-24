@@ -12,12 +12,19 @@ from config import Config
 
 upload_bp = Blueprint('upload', __name__)
 
-@upload_bp.route('/document', methods=['POST'])
+# Reuse heavy services across requests to keep memory low
+document_parser = DocumentParser()
+qdrant_service = QdrantService()
+qdrant_service.create_collection_if_not_exists()
+
+@upload_bp.route('/document', methods=['POST', 'OPTIONS'])
 def upload_document():
     """
     Handle document upload, parse, chunk, generate embeddings, and store in Qdrant
     Includes duplicate detection based on file hash
     """
+    if request.method == 'OPTIONS':
+        return ('', 204)
     try:
         if 'file' not in request.files:
             return jsonify({'error': 'No file provided'}), 400
@@ -39,10 +46,6 @@ def upload_document():
         
         # Compute file hash for duplicate detection
         file_hash = compute_file_hash(temp_file_path)
-        
-        # Check for existing document with same hash
-        qdrant_service = QdrantService()
-        qdrant_service.create_collection_if_not_exists()
         
         # Search for existing document with same hash
         existing_docs = qdrant_service.search_by_hash(file_hash)
@@ -80,9 +83,8 @@ def upload_document():
         os.rename(temp_file_path, file_path)
         
         # Parse document using Azure Document Intelligence for PDFs
-        parser = DocumentParser()
         try:
-            text_content, metadata = parser.parse_document(file_path, file_ext)
+            text_content, metadata = document_parser.parse_document(file_path, file_ext)
         except ValueError as parse_error:
             import traceback
             error_details = str(parse_error)
@@ -114,7 +116,7 @@ def upload_document():
             return jsonify({'error': 'Failed to extract text - document appears empty or contains no readable text'}), 400
         
         # Chunk text using LangChain with metadata
-        chunks = parser.chunk_text(
+        chunks = document_parser.chunk_text(
             text_content,
             chunk_size=Config.CHUNK_SIZE,
             chunk_overlap=Config.CHUNK_OVERLAP,
@@ -131,17 +133,14 @@ def upload_document():
         # Generate embeddings and store in Qdrant
         embedding_service = EmbeddingService()
         
-        # Ensure collection exists
-        qdrant_service.ensure_payload_index('document_id')
-        qdrant_service.ensure_payload_index('file_hash')
-        
         # Process chunks and store embeddings with enhanced metadata
         page_count = metadata.get('page_count', 1)
         total_chars = len(text_content)
         chapter_count = metadata.get('chapter_count')
         unit_count = metadata.get('unit_count')
         
-        stored_points = []
+        pending_points = []
+        stored_vectors = 0
         for chunk in chunks:
             embedding = embedding_service.generate_embedding(chunk['text'])
             if not embedding:
@@ -183,33 +182,47 @@ def upload_document():
             if unit_count is not None:
                 payload['document_unit_count'] = unit_count
             
-            stored_points.append({
+            pending_points.append({
                 'id': str(uuid.uuid4()),
                 'vector': embedding,
                 'payload': payload
             })
+            
+            if len(pending_points) >= 48:
+                try:
+                    qdrant_service.upsert_points_in_batches(pending_points, batch_size=48)
+                    stored_vectors += len(pending_points)
+                    pending_points = []
+                except Exception as exc:
+                    try:
+                        os.remove(file_path)
+                    except:
+                        pass
+                    return jsonify({'error': f'Failed to store embeddings: {exc}'}), 500
         
-        if not stored_points:
+        if pending_points:
+            try:
+                qdrant_service.upsert_points_in_batches(pending_points, batch_size=48)
+                stored_vectors += len(pending_points)
+            except Exception as exc:
+                try:
+                    os.remove(file_path)
+                except:
+                    pass
+                return jsonify({'error': f'Failed to store embeddings: {exc}'}), 500
+        
+        if stored_vectors == 0:
             try:
                 os.remove(file_path)
             except:
                 pass
             return jsonify({'error': 'Failed to generate embeddings for document'}), 500
         
-        try:
-            qdrant_service.upsert_points_in_batches(stored_points, batch_size=48)
-        except Exception as exc:
-            try:
-                os.remove(file_path)
-            except:
-                pass
-            return jsonify({'error': f'Failed to store embeddings: {exc}'}), 500
-        
         return jsonify({
             'success': True,
             'document_id': document_id,
             'filename': filename,
-            'chunks_processed': len(stored_points),
+            'chunks_processed': stored_vectors,
             'total_chunks': len(chunks),
             'chapter_count': chapter_count,
             'unit_count': unit_count,
@@ -222,3 +235,15 @@ def upload_document():
         print(f"Error in upload_document: {e}")
         print(f"Traceback: {traceback.format_exc()}")
         return jsonify({'error': str(e)}), 500
+
+
+@upload_bp.after_request
+def add_upload_cors_headers(response):
+    origin = request.headers.get('Origin')
+    if origin in Config.FRONTEND_ALLOWED_ORIGINS:
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Vary'] = 'Origin'
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
+    return response
