@@ -13,16 +13,23 @@ from config import Config
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# Enable CORS for frontend with explicit configuration
-CORS(app, 
+# Enable CORS globally for all routes with specific allowed origins
+allowed_origins = [
+    "http://localhost:3000",
+    "https://cereshikshak.cerevyn.in",
+    "https://cerevyn.in"
+]
+
+CORS(app,
      resources={r"/*": {
-         "origins": "*",
-         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-         "allow_headers": ["Content-Type", "Authorization", "X-Requested-With"],
-         "expose_headers": ["Content-Type"],
-         "supports_credentials": False
+         "origins": allowed_origins,
+         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+         "allow_headers": ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+         "expose_headers": ["Content-Type", "Content-Length"],
+         "supports_credentials": True,
+         "max_age": 3600
      }},
-     supports_credentials=False)
+     supports_credentials=True)
 
 # Register blueprints
 app.register_blueprint(upload_bp, url_prefix='/api/upload')
@@ -47,17 +54,10 @@ def root():
         }
     })
 
-@app.route('/api/health', methods=['GET'])
+@app.route('/api/health', methods=['GET', 'OPTIONS'])
 def health_check():
+    """Health check endpoint with CORS support"""
     return jsonify({'status': 'healthy', 'message': 'AI Tutor API is running'})
-
-# Handle preflight OPTIONS requests explicitly
-@app.after_request
-def after_request(response):
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
-    return response
 
 if __name__ == '__main__':
     # Disable the Werkzeug auto-reloader so changes inside the virtualenv (e.g. pip installs)
