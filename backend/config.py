@@ -3,21 +3,37 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
+def _get_env(key: str, default=None, strip: bool = True, remove_newlines: bool = True):
+    """
+    Fetch environment variables with optional stripping of whitespace/newlines.
+    Prevents malformed headers (e.g., Qdrant API key with trailing newline).
+    """
+    value = os.getenv(key, default)
+    if isinstance(value, str):
+        if strip:
+            value = value.strip()
+        if remove_newlines:
+            value = value.replace('\r', '').replace('\n', '')
+        return value
+    return value
+
+
 class Config:
     # OpenAI Configuration
-    OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-    OPENAI_EMBEDDING_MODEL = os.getenv('OPENAI_EMBEDDING_MODEL', 'text-embedding-3-small')
-    OPENAI_CHAT_MODEL = os.getenv('OPENAI_CHAT_MODEL', 'gpt-4o-mini')
+    OPENAI_API_KEY = _get_env('OPENAI_API_KEY')
+    OPENAI_EMBEDDING_MODEL = _get_env('OPENAI_EMBEDDING_MODEL', 'text-embedding-3-small')
+    OPENAI_CHAT_MODEL = _get_env('OPENAI_CHAT_MODEL', 'gpt-4o-mini')
     
     # Qdrant Configuration
-    QDRANT_URL = os.getenv('QDRANT_URL')
-    QDRANT_API_KEY = os.getenv('QDRANT_API_KEY')
-    QDRANT_COLLECTION_NAME = os.getenv('QDRANT_COLLECTION_NAME', 'ai_tutor_documents')
-    QDRANT_VECTOR_SIZE = int(os.getenv('QDRANT_VECTOR_SIZE', 1536))
+    QDRANT_URL = _get_env('QDRANT_URL')
+    QDRANT_API_KEY = _get_env('QDRANT_API_KEY')
+    QDRANT_COLLECTION_NAME = _get_env('QDRANT_COLLECTION_NAME', 'ai_tutor_documents')
+    QDRANT_VECTOR_SIZE = int(_get_env('QDRANT_VECTOR_SIZE', 1536))
     
     # Supabase Configuration
-    SUPABASE_URL = os.getenv('SUPABASE_URL')
-    SUPABASE_KEY = os.getenv('SUPABASE_KEY')
+    SUPABASE_URL = _get_env('SUPABASE_URL')
+    SUPABASE_KEY = _get_env('SUPABASE_KEY')
     
     # File Upload Configuration
     UPLOAD_FOLDER = 'uploads'
@@ -26,8 +42,8 @@ class Config:
     ALLOWED_EXTENSIONS = {'pdf', 'docx'}
     
     # LangChain Configuration
-    CHUNK_SIZE = int(os.getenv('CHUNK_SIZE', 1000))
-    CHUNK_OVERLAP = int(os.getenv('CHUNK_OVERLAP', 200))
+    CHUNK_SIZE = int(_get_env('CHUNK_SIZE', 1000))
+    CHUNK_OVERLAP = int(_get_env('CHUNK_OVERLAP', 200))
     
     # TTS Configuration
     TTS_LANGUAGE_MAP = {
@@ -45,15 +61,15 @@ class Config:
         'as': 'as',
         'ur': 'ur'
     }
-    TTS_MAX_CHARACTERS = int(os.getenv('TTS_MAX_CHARACTERS', 4000))
+    TTS_MAX_CHARACTERS = int(_get_env('TTS_MAX_CHARACTERS', 4000))
     
     # Azure Document Intelligence Configuration
-    AZURE_ENDPOINT = os.getenv('AZURE_ENDPOINT')
-    AZURE_KEY = os.getenv('AZURE_KEY')
+    AZURE_ENDPOINT = _get_env('AZURE_ENDPOINT')
+    AZURE_KEY = _get_env('AZURE_KEY')
     
     # Azure Speech Service Configuration
-    AZURE_SPEECH_KEY = os.getenv('AZURE_SPEECH_KEY') or os.getenv('AZURE_KEY')  # Fallback to AZURE_KEY if AZURE_SPEECH_KEY not set
-    AZURE_SPEECH_REGION = os.getenv('AZURE_SPEECH_REGION', 'eastus')
+    AZURE_SPEECH_KEY = _get_env('AZURE_SPEECH_KEY') or _get_env('AZURE_KEY')  # Fallback to AZURE_KEY if AZURE_SPEECH_KEY not set
+    AZURE_SPEECH_REGION = _get_env('AZURE_SPEECH_REGION', 'eastus')
     
     # Azure TTS Voice Map (Neural Voices)
     # Format: "language-code": "voice-name"
@@ -87,6 +103,6 @@ class Config:
     }
 
     # Azure Translator Configuration
-    AZURE_TRANSLATOR_KEY = os.getenv('AZURE_TRANSLATOR_KEY')
-    AZURE_TRANSLATOR_REGION = os.getenv('AZURE_TRANSLATOR_REGION', 'eastus')
-    AZURE_TRANSLATOR_ENDPOINT = os.getenv('AZURE_TRANSLATOR_ENDPOINT', 'https://api.cognitive.microsofttranslator.com')
+    AZURE_TRANSLATOR_KEY = _get_env('AZURE_TRANSLATOR_KEY')
+    AZURE_TRANSLATOR_REGION = _get_env('AZURE_TRANSLATOR_REGION', 'eastus')
+    AZURE_TRANSLATOR_ENDPOINT = _get_env('AZURE_TRANSLATOR_ENDPOINT', 'https://api.cognitive.microsofttranslator.com')
