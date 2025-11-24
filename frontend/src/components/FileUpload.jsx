@@ -54,11 +54,7 @@ function FileUpload({ onUpload }) {
       formData.append('file', file)
       formData.append('reprocess', 'true')
 
-      const response = await axios.post(`${API_BASE}/api/upload/document`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      })
+      const response = await axios.post(`${API_BASE}/api/upload/document`, formData)
 
       if (response.data.success) {
         setSuccess(true)
@@ -96,11 +92,7 @@ function FileUpload({ onUpload }) {
       const formData = new FormData()
       formData.append('file', file)
 
-      const response = await axios.post(`${API_BASE}/api/upload/document`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      })
+      const response = await axios.post(`${API_BASE}/api/upload/document`, formData)
 
       if (response.data.success) {
         // Check if duplicate
