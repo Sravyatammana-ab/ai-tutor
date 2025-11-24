@@ -22,9 +22,40 @@ function Sidebar({ documentName, sessionId, isOpen, onToggle }) {
     }
   }, [])
 
+  // Prevent body scroll when sidebar is open on mobile
+  useEffect(() => {
+    if (isOpen && window.innerWidth <= 768) {
+      document.body.style.overflow = 'hidden'
+      document.body.style.position = 'fixed'
+      document.body.style.width = '100%'
+    } else {
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.width = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.width = ''
+    }
+  }, [isOpen])
+
+  const handleOverlayClick = () => {
+    if (isOpen) {
+      onToggle()
+    }
+  }
+
   return (
     <>
-      {/* Sidebar Toggle Button */}
+      {/* Overlay for mobile */}
+      <div 
+        className={`sidebar-overlay ${isOpen ? 'open' : ''}`}
+        onClick={handleOverlayClick}
+        aria-hidden="true"
+      />
+
+      {/* Sidebar Toggle Button - Desktop only */}
       <button 
         className={`sidebar-toggle ${isOpen ? 'open' : ''}`}
         onClick={onToggle}
@@ -34,7 +65,7 @@ function Sidebar({ documentName, sessionId, isOpen, onToggle }) {
       </button>
 
       {/* Sidebar */}
-      <div className={`sidebar ${isOpen ? 'open' : ''}`}>
+      <div className={`sidebar ${isOpen ? 'open' : ''}`} onClick={(e) => e.stopPropagation()}>
         <div className="sidebar-content">
           <div className="sidebar-header">
             <h3>Session Info</h3>

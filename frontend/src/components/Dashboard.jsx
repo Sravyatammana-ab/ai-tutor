@@ -105,12 +105,21 @@ function Dashboard() {
     <div className="dashboard">
       <header className="dashboard-header">
         <div className="header-content">
+          {isDocumentUploaded && (
+            <button 
+              className="header-hamburger"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-label="Toggle sidebar"
+            >
+              ☰
+            </button>
+          )}
           <div className="logo-section">
             <img src={logoImage} alt="Cerevyn SOLUTIONS" className="dashboard-logo" />
           </div>
           <div className="header-center">
             <h1>CERE-SHIKSHAK</h1>
-            <p>Learn from your textbooks with AI assistance</p>
+            <p>Convert your books/documents into e books with AI assistance</p>
           </div>
           <div className="header-actions">
             {userName && <div className="header-user-pill">Hi, {userName}</div>}

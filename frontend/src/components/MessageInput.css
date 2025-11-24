@@ -1,12 +1,14 @@
 .message-input {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   align-items: flex-end;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .message-textarea {
   flex: 1;
-  padding: 1rem;
+  padding: 0.875rem 1rem;
   border: 2px solid #e2e8f0;
   border-radius: 8px;
   font-size: 1rem;
@@ -15,6 +17,10 @@
   min-height: 50px;
   max-height: 150px;
   transition: border-color 0.3s;
+  width: 100%;
+  box-sizing: border-box;
+  /* Prevent zoom on iOS */
+  font-size: 16px;
 }
 
 .message-textarea:focus {
@@ -28,7 +34,7 @@
 }
 
 .send-button {
-  padding: 1rem 2rem;
+  padding: 0.875rem 1.5rem;
   background: #1a1f3a;
   color: white;
   border: none;
@@ -37,7 +43,9 @@
   font-size: 1rem;
   font-weight: 600;
   transition: all 0.3s;
-  min-width: 100px;
+  min-width: 80px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .send-button:hover:not(:disabled) {
@@ -49,6 +57,46 @@
 .send-button:disabled {
   background: #cbd5e0;
   cursor: not-allowed;
+  transform: none;
+}
+
+@media (max-width: 768px) {
+  .message-input {
+    gap: 0.5rem;
+  }
+
+  .message-textarea {
+    padding: 0.75rem 0.85rem;
+    font-size: 16px; /* Prevent iOS zoom */
+    min-height: 44px; /* Minimum touch target */
+    max-height: 120px;
+  }
+
+  .send-button {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.9rem;
+    min-width: 70px;
+  }
+}
+
+@media (max-width: 480px) {
+  .message-input {
+    gap: 0.4rem;
+  }
+
+  .message-textarea {
+    padding: 0.65rem 0.75rem;
+    font-size: 16px;
+    min-height: 44px;
+    max-height: 100px;
+    border-width: 1.5px;
+  }
+
+  .send-button {
+    padding: 0.65rem 1rem;
+    font-size: 0.85rem;
+    min-width: 65px;
+  }
 }
 
 @media (max-width: 600px) {

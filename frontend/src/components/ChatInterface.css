@@ -10,6 +10,8 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   overflow: hidden;
   position: relative;
+  /* Ensure proper layout on mobile */
+  width: 100%;
 }
 
 .chat-context-bar {
@@ -93,6 +95,9 @@
   position: sticky;
   bottom: 0;
   box-shadow: 0 -6px 18px rgba(15, 23, 42, 0.08);
+  /* Ensure input is always visible */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .suggested-questions {
@@ -160,48 +165,136 @@
 }
 
 @media (max-width: 768px) {
+  .chat-interface {
+    border-radius: 8px;
+    height: 100%;
+    max-height: 100%;
+  }
+
   .chat-context-bar {
     flex-direction: column;
     align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    flex-shrink: 0;
   }
 
   .chat-context-meta {
     width: 100%;
     text-align: left;
+    font-size: 0.75rem;
+  }
+
+  .chat-context-title {
+    font-size: 0.95rem;
+  }
+
+  .chat-context-label {
+    font-size: 0.7rem;
+  }
+
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    padding-bottom: 4rem; /* Space for input section */
+    padding-top: 1rem;
+    min-height: 0;
+    /* Ensure proper scrolling */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
 
   .chat-input-section {
-    position: static;
-    box-shadow: none;
+    position: sticky;
+    bottom: 0;
+    padding: 0.75rem;
+    box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.1);
+    /* Safe area for mobile keyboard */
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  .suggested-questions {
+    margin-bottom: 0.75rem;
+    /* Ensure suggestions are always visible */
+    flex-shrink: 0;
   }
 
   .suggestions-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.35rem;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .suggestions-header p {
+    font-size: 0.8rem;
+  }
+
+  .suggestions-toggle {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.4rem;
   }
 
   .question-buttons {
     flex-direction: column;
+    gap: 0.5rem;
   }
 
   .suggested-question-btn {
     width: 100%;
     text-align: left;
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+    white-space: normal;
+    word-wrap: break-word;
   }
 }
 
 @media (max-width: 480px) {
+  .chat-interface {
+    border-radius: 0;
+  }
+
   .chat-context-bar {
-    padding: 0.85rem 1rem;
+    padding: 0.6rem 0.75rem;
+  }
+
+  .chat-context-title {
+    font-size: 0.85rem;
+  }
+
+  .chat-context-label {
+    font-size: 0.65rem;
+  }
+
+  .chat-context-meta {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
   }
 
   .chat-messages {
-    padding: 0.85rem;
+    padding: 0.75rem;
+    padding-bottom: 4rem;
   }
 
   .chat-input-section {
-    padding: 0.85rem;
+    padding: 0.6rem;
+    padding-bottom: max(0.6rem, env(safe-area-inset-bottom));
+  }
+
+  .suggested-questions {
+    margin-bottom: 0.6rem;
+  }
+
+  .suggestions-header p {
+    font-size: 0.75rem;
+  }
+
+  .suggested-question-btn {
+    padding: 0.5rem 0.85rem;
+    font-size: 0.8rem;
   }
 }
 

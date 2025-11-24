@@ -102,7 +102,7 @@ function SignIn() {
       <div className="auth-card">
         <div className="auth-header">
           <h1>Sign In</h1>
-          <p>Welcome back to AI Tutor</p>
+          <p>Welcome back to cere-shikshak Tutor</p>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">

@@ -28,6 +28,13 @@
   left: 280px;
 }
 
+/* Hide toggle button on mobile - hamburger in header is used instead */
+@media (max-width: 768px) {
+  .sidebar-toggle {
+    display: none;
+  }
+}
+
 @media (max-width: 1024px) {
   .sidebar {
     width: 250px;
@@ -37,6 +44,26 @@
   .sidebar-toggle.open {
     left: 250px;
   }
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.sidebar-overlay.open {
+  display: block;
+  opacity: 1;
+  pointer-events: all;
 }
 
 .sidebar {
@@ -126,43 +153,45 @@
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {
+  .sidebar-overlay {
+    display: block;
+  }
+
   .sidebar {
-    top: auto;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    max-width: none;
-    height: 70%;
-    border-right: none;
-    border-radius: 20px 20px 0 0;
-    background: rgba(14, 19, 43, 0.95);
-    transform: translateY(110%);
-    transition: transform 0.3s ease;
+    top: 0;
+    left: -280px;
+    width: 280px;
+    max-width: 85vw;
+    height: 100vh;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0;
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
+    transform: none;
+    transition: left 0.3s ease;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
   }
 
   .sidebar.open {
-    transform: translateY(0);
-  }
-
-  .sidebar-toggle {
-    width: 54px;
-    height: 54px;
-    border-radius: 50%;
-    left: auto;
-    right: 1rem;
-    top: auto;
-    bottom: 1rem;
-    background: rgba(0, 0, 0, 0.6);
-    font-size: 1.4rem;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
-  }
-
-  .sidebar-toggle.open {
-    right: 1rem;
+    left: 0;
+    transform: none;
   }
 
   .sidebar-content {
     padding: 1.25rem;
+    padding-top: 90px; /* Space for header */
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar {
+    width: 260px;
+    max-width: 85vw;
+  }
+
+  .sidebar-content {
+    padding: 1rem;
+    padding-top: 75px; /* Space for smaller header */
   }
 }
 

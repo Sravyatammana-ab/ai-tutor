@@ -74,9 +74,9 @@ function Homepage() {
 
       <div className="homepage-hero">
         <div className="hero-content">
-          <h1 className="hero-title">AI TUTOR</h1>
+          <h1 className="hero-title">CERE-SHIKSHAK</h1>
           <p className="hero-description">
-            AI TUTOR is an intelligent learning platform designed to help students learn from their textbooks with AI assistance. 
+            CERE-SHIKSHAK is an intelligent learning platform designed to help students learn from their textbooks with AI assistance. 
             Upload your PDF textbooks, ask questions, and get instant answers in multiple Indian languages and English.
           </p>
           <div className="hero-buttons">

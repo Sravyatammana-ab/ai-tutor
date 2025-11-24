@@ -136,6 +136,10 @@
   margin-bottom: 0.25rem;
   position: relative;
   z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
 }
 
 .replay-audio-btn {
@@ -147,6 +151,10 @@
   cursor: pointer;
   font-size: 0.85rem;
   transition: background 0.3s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
 }
 
 .replay-audio-btn:hover {
@@ -159,6 +167,44 @@
 
 .message-user .replay-audio-btn:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+@media (max-width: 768px) {
+  .message-content {
+    max-width: 85%;
+    padding: 0.75rem 0.9rem;
+    padding-bottom: 1rem;
+  }
+
+  .message-audio {
+    margin-top: 0.6rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .replay-audio-btn {
+    padding: 0.45rem 0.85rem;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .message-content {
+    max-width: 90%;
+    padding: 0.65rem 0.8rem;
+    padding-bottom: 0.9rem;
+    border-radius: 16px;
+  }
+
+  .message-audio {
+    margin-top: 0.5rem;
+    margin-bottom: 0.15rem;
+  }
+
+  .replay-audio-btn {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.75rem;
+    border-radius: 5px;
+  }
 }
 
 

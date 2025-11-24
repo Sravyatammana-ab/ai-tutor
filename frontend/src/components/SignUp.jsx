@@ -131,7 +131,7 @@ function SignUp() {
       <div className="auth-card">
         <div className="auth-header">
           <h1>Sign Up</h1>
-          <p>Create your AI Tutor account</p>
+          <p>Create your cere-shikshak account</p>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
