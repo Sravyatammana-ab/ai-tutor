@@ -100,12 +100,40 @@
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
 }
 
 .sidebar-header h3 {
   margin: 0;
   font-size: 1.2rem;
   color: white;
+  flex: 1;
+}
+
+.sidebar-close-btn {
+  display: none; /* Hidden on desktop */
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+  flex-shrink: 0;
+}
+
+.sidebar-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .sidebar-section {
@@ -155,6 +183,7 @@
 @media (max-width: 768px) {
   .sidebar-overlay {
     display: block;
+    z-index: 9998; /* Below sidebar but above content */
   }
 
   .sidebar {
@@ -165,11 +194,12 @@
     height: 100vh;
     border-right: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 0;
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.35);
     backdrop-filter: blur(10px);
     transform: none;
     transition: left 0.3s ease;
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+    z-index: 9999; /* Above overlay */
   }
 
   .sidebar.open {
@@ -179,7 +209,11 @@
 
   .sidebar-content {
     padding: 1.25rem;
-    padding-top: 90px; /* Space for header */
+    padding-top: 150px; /* Space for mobile header */
+  }
+
+  .sidebar-close-btn {
+    display: flex; /* Show on mobile */
   }
 }
 
@@ -191,7 +225,7 @@
 
   .sidebar-content {
     padding: 1rem;
-    padding-top: 75px; /* Space for smaller header */
+    padding-top: 140px; /* Space for smaller mobile header */
   }
 }
 

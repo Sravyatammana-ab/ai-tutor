@@ -104,25 +104,65 @@ function Dashboard() {
   return (
     <div className="dashboard">
       <header className="dashboard-header">
-        <div className="header-content">
-          {isDocumentUploaded && (
-            <button 
-              className="header-hamburger"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              aria-label="Toggle sidebar"
-            >
-              ☰
-            </button>
-          )}
-          <div className="logo-section">
-            <img src={logoImage} alt="Cerevyn SOLUTIONS" className="dashboard-logo" />
+        {/* Desktop Layout */}
+        <div className="header-content header-desktop">
+          <div className="header-left">
+            {isDocumentUploaded && (
+              <button 
+                className="header-hamburger"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                aria-label="Toggle sidebar"
+              >
+                ☰
+              </button>
+            )}
+            <div className="logo-section">
+              <img src={logoImage} alt="Cerevyn SOLUTIONS" className="dashboard-logo" />
+            </div>
           </div>
           <div className="header-center">
             <h1>CERE-SHIKSHAK</h1>
             <p>Convert your books/documents into e books with AI assistance</p>
           </div>
           <div className="header-actions">
-            {userName && <div className="header-user-pill">Hi, {userName}</div>}
+            <div className="header-user-pill">
+              {userName ? `Hi, ${userName}` : 'Hi, User'}
+            </div>
+            <button className="btn-signout" onClick={handleSignOut}>
+              Sign Out
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Layout - 3 Rows */}
+        <div className="header-content header-mobile">
+          {/* Row 1: Hamburger (left) + Logo (center) */}
+          <div className="header-row-1">
+            {isDocumentUploaded && (
+              <button 
+                className="header-hamburger"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                aria-label="Toggle sidebar"
+              >
+                ☰
+              </button>
+            )}
+            <div className="logo-section-mobile">
+              <img src={logoImage} alt="Cerevyn SOLUTIONS" className="dashboard-logo" />
+            </div>
+          </div>
+
+          {/* Row 2: Title and Description (centered) */}
+          <div className="header-row-2">
+            <h1>CERE-SHIKSHAK</h1>
+            <p>Convert your books/documents into e-books with AI assistance</p>
+          </div>
+
+          {/* Row 3: Username (left) + Sign Out (right) */}
+          <div className="header-row-3">
+            <div className="header-user-pill-mobile">
+              {userName ? `Hi, ${userName}` : 'Hi, User'}
+            </div>
             <button className="btn-signout" onClick={handleSignOut}>
               Sign Out
             </button>

@@ -10,8 +10,10 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   overflow: hidden;
   position: relative;
-  /* Ensure proper layout on mobile */
   width: 100%;
+  box-sizing: border-box;
+  /* Ensure all content is visible including input section */
+  justify-content: space-between;
 }
 
 .chat-context-bar {
@@ -52,7 +54,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   padding: 1.5rem;
-  padding-bottom: 6rem; /* Space for sticky input */
+  padding-bottom: 1rem;
   padding-top: 2rem; /* Extra top padding to ensure first message is visible */
   background: #f7fafc;
   min-height: 0;
@@ -67,6 +69,8 @@
   -webkit-overflow-scrolling: touch;
   /* Ensure first message is visible when scrolled to top */
   scroll-padding-top: 1rem;
+  /* Ensure messages area doesn't push input section out of view */
+  overflow: auto;
 }
 
 .chat-messages::-webkit-scrollbar {
@@ -90,14 +94,16 @@
   border-top: 1px solid #e2e8f0;
   padding: 1rem;
   background: white;
-  flex-shrink: 0; /* Don't shrink */
+  flex-shrink: 0; /* Don't shrink - CRITICAL to keep input visible */
   z-index: 10;
-  position: sticky;
-  bottom: 0;
+  position: relative;
   box-shadow: 0 -6px 18px rgba(15, 23, 42, 0.08);
   /* Ensure input is always visible */
   width: 100%;
   box-sizing: border-box;
+  min-height: fit-content;
+  /* Force input section to stay at bottom */
+  margin-top: auto;
 }
 
 .suggested-questions {
