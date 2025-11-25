@@ -3,19 +3,19 @@ import uuid
 from typing import Dict
 
 from utils.embedding_service import EmbeddingService
-from utils.qdrant import QdrantService
 from utils.llm_service import LLMService
 from utils.tts import TTSService
 from utils.supabase_service import SupabaseService
 from utils.memory_service import MemoryService
 from utils.translator import TranslatorService
+from utils.vector_store import VectorStoreService
 from config import Config
 
 chat_bp = Blueprint('chat', __name__)
 
 # Initialize services (lazy initialization to handle errors gracefully)
 embedding_service = None
-qdrant_service = None
+vector_store_service = None
 llm_service = None
 tts_service = None
 supabase_service = None
@@ -28,11 +28,11 @@ def get_embedding_service():
         embedding_service = EmbeddingService()
     return embedding_service
 
-def get_qdrant_service():
-    global qdrant_service
-    if qdrant_service is None:
-        qdrant_service = QdrantService()
-    return qdrant_service
+def get_vector_store():
+    global vector_store_service
+    if vector_store_service is None:
+        vector_store_service = VectorStoreService()
+    return vector_store_service
 
 def get_llm_service():
     global llm_service
@@ -96,7 +96,7 @@ def send_message():
         
         # Get services
         embedding_service = get_embedding_service()
-        qdrant_service = get_qdrant_service()
+        vector_store = get_vector_store()
         llm_service = get_llm_service()
         tts_service = get_tts_service()
         supabase_service = get_supabase_service()
@@ -122,7 +122,7 @@ def send_message():
         
         # Enhanced retrieval: Try multiple strategies
         # Strategy 1: Direct semantic search with document filter
-        results = qdrant_service.search_similar(
+        results = vector_store.search_similar(
             query_vector=query_embedding,
             limit=10,  # Increased limit for better context
             filter_conditions={'document_id': document_id}
@@ -130,7 +130,7 @@ def send_message():
         
         # Strategy 2: If no results, try without filter (fallback)
         if not results or len(results) == 0:
-            results = qdrant_service.search_similar(
+            results = vector_store.search_similar(
                 query_vector=query_embedding,
                 limit=10,
                 filter_conditions=None
@@ -166,7 +166,7 @@ def send_message():
             nonlocal chapter_count_from_metadata, unit_count_from_metadata
             try:
                 if not chapter_titles or not unit_titles or chapter_count_from_metadata is None or unit_count_from_metadata is None:
-                    samples = qdrant_service.get_document_metadata_samples(document_id, limit=128)
+                    samples = vector_store.get_document_metadata_samples(document_id, limit=128)
                     for payload in samples:
                         chapter_value = payload.get('chapter_title')
                         unit_value = payload.get('unit_title')
@@ -239,7 +239,7 @@ def send_message():
                 generic_query = "textbook content chapters units"
                 generic_embedding = embedding_service.generate_embedding(generic_query)
                 if generic_embedding:
-                    fallback_results = qdrant_service.search_similar(
+                    fallback_results = vector_store.search_similar(
                         query_vector=generic_embedding,
                         limit=5,
                         filter_conditions={'document_id': document_id}
@@ -386,7 +386,7 @@ def get_suggestions():
             return jsonify({'error': 'No document_id provided'}), 400
         
         # Get services
-        qdrant_service = get_qdrant_service()
+        vector_store = get_vector_store()
         embedding_service = get_embedding_service()
         
         # Try multiple search queries to get diverse content
@@ -401,7 +401,7 @@ def get_suggestions():
             try:
                 query_embedding = embedding_service.generate_embedding(query_text)
                 if query_embedding:
-                    search_results = qdrant_service.search_similar(
+                    search_results = vector_store.search_similar(
                         query_vector=query_embedding,
                         limit=2,
                         filter_conditions={'document_id': document_id}
@@ -419,7 +419,7 @@ def get_suggestions():
             try:
                 query_embedding = embedding_service.generate_embedding("textbook content")
                 if query_embedding:
-                    search_results = qdrant_service.search_similar(
+                    search_results = vector_store.search_similar(
                         query_vector=query_embedding,
                         limit=5,
                         filter_conditions={'document_id': document_id}

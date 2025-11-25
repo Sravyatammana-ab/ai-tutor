@@ -58,7 +58,7 @@ def main():
     print("\nNext steps:")
     print("1. Update .env with your API keys")
     print("2. Set up Supabase database (see README.md)")
-    print("3. Set up Qdrant cluster (see README.md)")
+    print("3. Ensure VECTOR_DB_PATH is writable (see README.md)")
     print("4. Run: python app.py")
 
 if __name__ == '__main__':

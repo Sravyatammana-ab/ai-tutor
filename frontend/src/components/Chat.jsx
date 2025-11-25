@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import MessageList from './MessageList'
 import MessageInput from './MessageInput'
-import './ChatInterface.css'
+import './Chat.css'
 
 const API_BASE =
   (import.meta.env.VITE_API_BASE_URL && import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '')) ||
@@ -27,6 +27,7 @@ function Chat({ documentId, documentName, sessionId, language, onSessionReady = 
 
   const audioRegistry = useRef(new Map())
   const messagesEndRef = useRef(null)
+  const messagesContainerRef = useRef(null)
   const messagesSnapshotRef = useRef(messages)
   const historySessionRef = useRef(null)
 
@@ -82,65 +83,39 @@ function Chat({ documentId, documentName, sessionId, language, onSessionReady = 
     fetchSuggestions()
   }, [documentId, language, resetConversation])
 
-  const scrollToBottom = useCallback(() => {
-    // Use setTimeout to ensure DOM is updated
-    setTimeout(() => {
-      const messagesContainer = messagesEndRef.current?.parentElement
-      if (messagesContainer) {
-        // Scroll to bottom with a small offset to ensure last message is fully visible
-        messagesContainer.scrollTop = messagesContainer.scrollHeight + 50
-      } else {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
-      }
-    }, 150)
-  }, [])
-  
-  useEffect(() => {
-    // Always scroll to bottom when new messages arrive
-    const messagesContainer = messagesEndRef.current?.parentElement
-    if (messagesContainer) {
-      const isNearBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight < 300
-      // Always scroll if user is near bottom or if it's a new message
-      if (isNearBottom || messages.length <= 2) {
-        scrollToBottom()
-      }
+  const scrollToBottom = useCallback((behavior = 'smooth') => {
+    const container = messagesContainerRef.current
+    if (container) {
+      container.scrollTo({
+        top: container.scrollHeight + 50,
+        behavior
+      })
     } else {
+      messagesEndRef.current?.scrollIntoView({ behavior, block: 'end' })
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!messagesContainerRef.current) {
+      scrollToBottom('auto')
+      return
+    }
+    const container = messagesContainerRef.current
+    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 240
+    if (isNearBottom || messages.length <= 2) {
       scrollToBottom()
     }
   }, [messages, scrollToBottom])
-  
-  // Ensure first message is visible when scrolling to top
+
   useEffect(() => {
-    const messagesContainer = messagesEndRef.current?.parentElement
-    if (messagesContainer) {
-      const handleScroll = () => {
-        // If scrolled to top, ensure first message is visible
-        if (messagesContainer.scrollTop < 50 && messages.length > 0) {
-          // Small adjustment to ensure first message header is visible
-          if (messagesContainer.scrollTop === 0) {
-            messagesContainer.scrollTop = 5
-          }
-        }
-      }
-      messagesContainer.addEventListener('scroll', handleScroll)
-      return () => messagesContainer.removeEventListener('scroll', handleScroll)
+    const container = messagesContainerRef.current
+    if (!container) return
+    const handleResize = () => {
+      container.style.minHeight = '0px'
     }
-  }, [messages.length])
-  
-  // Force scroll on new message - ensure all content is visible
-  useEffect(() => {
-    if (messages.length > 0) {
-      const timer = setTimeout(() => {
-        scrollToBottom()
-        // Also ensure scroll container has proper height
-        const messagesContainer = messagesEndRef.current?.parentElement
-        if (messagesContainer) {
-          messagesContainer.style.minHeight = '400px'
-        }
-      }, 200)
-      return () => clearTimeout(timer)
-    }
-  }, [messages.length, scrollToBottom])
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   const normalizeHistoryMessages = useCallback((historyData) => {
     if (!Array.isArray(historyData) || historyData.length === 0) {
@@ -226,7 +201,7 @@ function Chat({ documentId, documentName, sessionId, language, onSessionReady = 
     }
   }, [])
 
-  const handleAudioPlay = useCallback((messageId, audioElement) => {
+  const handleAudioPlay = useCallback((messageId) => {
     audioRegistry.current.forEach((ref, id) => {
       if (id !== messageId && ref && !ref.paused) {
         ref.pause()
@@ -274,7 +249,7 @@ function Chat({ documentId, documentName, sessionId, language, onSessionReady = 
       const generatingMessage = {
         id: generateId(),
         role: 'assistant',
-        content: 'Generating...',
+        content: '',
         isGenerating: true,
         createdAt: new Date().toISOString()
       }
@@ -302,7 +277,7 @@ function Chat({ documentId, documentName, sessionId, language, onSessionReady = 
             id: generateId(),
             role: 'assistant',
             content: response.data.response,
-            audioUrl: `${API_BASE}${response.data.audio_url}`,
+            audioUrl: response.data.audio_url ? `${API_BASE}${response.data.audio_url}` : null,
             autoPlay: true,
             createdAt: new Date().toISOString(),
             sources: response.data.sources || []
@@ -328,7 +303,7 @@ function Chat({ documentId, documentName, sessionId, language, onSessionReady = 
         setLoading(false)
       }
     },
-    [buildHistoryPayload, documentId, language, loading, sessionId]
+    [buildHistoryPayload, documentId, language, loading, scrollToBottom, sessionId]
   )
 
   const handleSubmit = useCallback(() => {
@@ -351,7 +326,7 @@ function Chat({ documentId, documentName, sessionId, language, onSessionReady = 
           <span>{sessionId || 'active'}</span>
         </div>
       </div>
-      <div className="chat-messages">
+      <div className="chat-messages" ref={messagesContainerRef}>
         {loadingHistory && messages.length === 0 && (
           <div className="history-loading">Loading your previous conversation…</div>
         )}

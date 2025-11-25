@@ -1,7 +1,10 @@
 import os
 from typing import Optional
 from azure.core.credentials import AzureKeyCredential
-from azure.ai.documentintelligence import DocumentIntelligenceClient
+from azure.ai.documentintelligence import (
+    DocumentIntelligenceClient,
+    DocumentIntelligenceApiVersion
+)
 from config import Config
 
 
@@ -32,7 +35,8 @@ class AzureOCRService:
             # Initialize Document Intelligence client
             self.client = DocumentIntelligenceClient(
                 endpoint=self.endpoint,
-                credential=AzureKeyCredential(self.key)
+                credential=AzureKeyCredential(self.key),
+                api_version=DocumentIntelligenceApiVersion.V2023_10_31
             )
         except Exception as e:
             raise ValueError(f"Failed to initialize Azure Document Intelligence client: {e}")

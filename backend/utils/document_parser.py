@@ -208,6 +208,8 @@ class DocumentParser:
             paragraphs = [p.text for p in doc.paragraphs if p.text.strip() != ""]
             metadata['paragraph_count'] = len(paragraphs)
             metadata['source'] = 'python-docx'
+            word_count = len(text_content.split())
+            metadata['page_count'] = max(1, word_count // 500) or 1
             
             return text_content, metadata
             
@@ -215,12 +217,12 @@ class DocumentParser:
             raise ValueError(f"Failed to parse DOCX: {e}")
     
     def _clean_text(self, text: str) -> str:
-        """Clean and normalize extracted text"""
-        # Remove excessive whitespace
-        text = re.sub(r'\s+', ' ', text)
-        # Restore line breaks for paragraphs
-        text = re.sub(r'\.\s+([A-Z])', r'.\n\n\1', text)
-        # Remove special characters that might interfere
+        """Clean and normalize extracted text while keeping paragraph breaks"""
+        text = text.replace('\r\n', '\n').replace('\r', '\n')
+        # Collapse tabs/multiple spaces but retain paragraph breaks
+        text = re.sub(r'[ \t]+', ' ', text)
+        text = re.sub(r'\n{3,}', '\n\n', text)
+        # Remove null chars
         text = text.replace('\x00', '')
         return text.strip()
     

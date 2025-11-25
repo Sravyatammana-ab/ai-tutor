@@ -28,7 +28,7 @@ function Message({ message, onPlayAudio, onPauseAudio, registerAudio, isActive }
           </div>
         </div>
 
-        {message.content && (
+        {(message.content || isGenerating) && (
           <div className="message-text">
             {isGenerating ? (
               <div className="generating-indicator">

@@ -7,7 +7,7 @@ from werkzeug.utils import secure_filename
 
 from utils.document_parser import DocumentParser, compute_file_hash
 from utils.embedding_service import EmbeddingService
-from utils.qdrant import QdrantService
+from utils.vector_store import VectorStoreService
 from config import Config
 
 upload_bp = Blueprint('upload', __name__)
@@ -42,11 +42,11 @@ def upload_document():
         # Compute file hash
         file_hash = compute_file_hash(temp_path)
 
-        # Lazy load Qdrant on demand (to avoid memory crash)
-        qdrant_service = QdrantService()
-        qdrant_service.create_collection_if_not_exists()
+        # Lazy load vector store on demand (to avoid memory crash)
+        vector_store = VectorStoreService()
+        vector_store.create_collection_if_not_exists()
 
-        existing_docs = qdrant_service.search_by_hash(file_hash)
+        existing_docs = vector_store.search_by_hash(file_hash)
 
         if existing_docs:
             existing = existing_docs[0]
@@ -63,7 +63,7 @@ def upload_document():
         # Reprocess check
         reprocess = request.form.get('reprocess', 'false').lower() == 'true'
         if reprocess:
-            qdrant_service.delete_by_hash(file_hash)
+            vector_store.delete_by_hash(file_hash)
 
         document_id = str(uuid.uuid4())
         final_path = os.path.join(Config.UPLOAD_FOLDER, f"{document_id}.{file_ext}")
@@ -125,7 +125,14 @@ def upload_document():
                 'filename': filename,
                 'text': chunk['text'],
                 'page': page_number,
-                'chunk_index': chunk['chunk_index']
+                'chunk_index': chunk['chunk_index'],
+                'chapter_number': chunk.get('chapter_number'),
+                'chapter_title': chunk.get('chapter_title'),
+                'unit_number': chunk.get('unit_number'),
+                'unit_title': chunk.get('unit_title'),
+                'document_chapter_count': metadata.get('chapter_count'),
+                'document_unit_count': metadata.get('unit_count'),
+                'document_page_count': metadata.get('page_count')
             }
 
             pending_points.append({
@@ -135,12 +142,12 @@ def upload_document():
             })
 
             if len(pending_points) >= 48:
-                qdrant_service.upsert_points_in_batches(pending_points, batch_size=48)
+                vector_store.upsert_points_in_batches(pending_points, batch_size=48)
                 stored += len(pending_points)
                 pending_points = []
 
         if pending_points:
-            qdrant_service.upsert_points_in_batches(pending_points, batch_size=48)
+            vector_store.upsert_points_in_batches(pending_points, batch_size=48)
             stored += len(pending_points)
 
         if stored == 0:

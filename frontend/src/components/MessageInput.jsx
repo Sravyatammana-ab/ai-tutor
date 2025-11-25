@@ -2,12 +2,10 @@ import React from 'react'
 import './MessageInput.css'
 
 function MessageInput({ value, onChange, onSend, loading, placeholder }) {
-  const handleKeyPress = (e) => {
+  const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       onSend()
-      // Prevent scroll jump
-      e.target.blur()
     }
   }
 
@@ -16,9 +14,8 @@ function MessageInput({ value, onChange, onSend, loading, placeholder }) {
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        onKeyPress={handleKeyPress}
+        onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        disabled={loading}
         rows={1}
         className="message-textarea"
       />
