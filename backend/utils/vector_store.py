@@ -10,8 +10,9 @@ from qdrant_client.models import (
     FieldCondition,
     MatchValue,
     PayloadSchemaType,
-    PointIdsList
+    PointIdsList,
 )
+from qdrant_client.http.models import NamedVector
 
 from config import Config
 
@@ -40,9 +41,7 @@ class VectorStoreService:
         self.collection_name = Config.QDRANT_COLLECTION_NAME
         self.vector_size = Config.QDRANT_VECTOR_SIZE or 1536
 
-    ##########################################################################
     #  COLLECTION CREATION — uses vector name "default"
-    ##########################################################################
     def create_collection_if_not_exists(self) -> None:
         # Use collection name as key for checked collections
         if self.collection_name in VectorStoreService._checked_collections:
@@ -203,11 +202,11 @@ class VectorStoreService:
 
         query_filter = self._build_filter(filter_conditions)
 
-        # ALWAYS use vector_name="default" explicitly
+        # ALWAYS use named vector "default" - use NamedVector for named vectors
+        named_query_vector = NamedVector(name="default", vector=query_vector)
         results = self.client.search(
             collection_name=self.collection_name,
-            query_vector=query_vector,
-            vector_name="default",  # Named vector "default"
+            query_vector=named_query_vector,  # Named vector "default"
             limit=limit,
             query_filter=query_filter,
             with_payload=True,
@@ -294,9 +293,7 @@ class VectorStoreService:
             print(f"Error searching by hash: {e}")
             return []
 
-    ##########################################################################
     #  DELETE BY HASH
-    ##########################################################################
     def delete_by_hash(self, file_hash: str):
         self.create_collection_if_not_exists()
 
