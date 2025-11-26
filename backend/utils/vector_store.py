@@ -41,7 +41,7 @@ class VectorStoreService:
         self.vector_size = Config.QDRANT_VECTOR_SIZE or 1536
 
     ##########################################################################
-    #  FIXED COLLECTION CREATION — uses vector name "default"
+    #  COLLECTION CREATION — uses vector name "default"
     ##########################################################################
     def create_collection_if_not_exists(self) -> None:
         if VectorStoreService._collection_initialized:
@@ -54,39 +54,32 @@ class VectorStoreService:
             print(f"Error getting collections: {e}")
             raise
 
-        # DELETE ANY OLD COLLECTION to remove wrong vector_name config
-        if self.collection_name in names:
-            print(f"⚠ Collection {self.collection_name} exists. Deleting...")
+        # CREATE COLLECTION ONLY IF IT DOES NOT EXIST
+        if self.collection_name not in names:
             try:
-                self.client.delete_collection(self.collection_name)
-                print(f"✓ Deleted old collection.")
-                time.sleep(1)
-            except Exception as err:
-                print(f"⚠ Could not delete collection: {err}")
+                self.client.create_collection(
+                    collection_name=self.collection_name,
+                    vectors_config={
+                        "default": VectorParams(
+                            size=self.vector_size,
+                            distance=Distance.COSINE,
+                        )
+                    }
+                )
+                print(f"✓ Created collection '{self.collection_name}' with vector_name='default'")
+            except Exception as e:
+                print(f"✗ Error creating collection: {e}")
+                raise
 
-        # CREATE NEW COLLECTION WITH vector_name="default"
-        try:
-            self.client.create_collection(
-                collection_name=self.collection_name,
-                vectors_config={
-                    "default": VectorParams(
-                        size=self.vector_size,
-                        distance=Distance.COSINE,
-                    )
-                }
-            )
-            print(f"✓ Created new collection '{self.collection_name}' with vector_name='default'")
-        except Exception as e:
-            print(f"✗ Error creating collection: {e}")
-            raise
-
-        # Create payload indexes
-        try:
-            self.ensure_payload_index("document_id")
-            self.ensure_payload_index("file_hash")
-            print("✓ Payload indexes created")
-        except Exception as e:
-            print(f"⚠ Could not create payload indexes: {e}")
+            # Create payload indexes
+            try:
+                self.ensure_payload_index("document_id")
+                self.ensure_payload_index("file_hash")
+                print("✓ Payload indexes created")
+            except Exception as e:
+                print(f"⚠ Could not create payload indexes: {e}")
+        else:
+            print(f"✓ Collection '{self.collection_name}' already exists")
 
         VectorStoreService._collection_initialized = True
 
@@ -114,7 +107,7 @@ class VectorStoreService:
         structs = [
             PointStruct(
                 id=p["id"],
-                vector=p["vector"],
+                vector={"default": p["vector"]},
                 payload=p["payload"]
             )
             for p in points
@@ -174,6 +167,7 @@ class VectorStoreService:
         results = self.client.search(
             collection_name=self.collection_name,
             query_vector=query_vector,
+            vector_name="default",
             limit=limit,
             query_filter=query_filter,
             with_payload=True,

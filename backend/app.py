@@ -46,5 +46,14 @@ def health_check():
     
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
+    # Enable auto-reload in development (set FLASK_ENV=development or FLASK_DEBUG=1)
+    is_development = os.environ.get("FLASK_ENV") == "development" or os.environ.get("FLASK_DEBUG") == "1"
+    
     # For production Render/Gunicorn, app.run won't be used; still fine locally.
-    app.run(debug=False, host='0.0.0.0', port=port, use_reloader=False)
+    # In development, enable debug mode and auto-reloader for hot-reloading
+    app.run(
+        debug=is_development,
+        host='0.0.0.0',
+        port=port,
+        use_reloader=is_development  # Auto-reload on file changes
+    )
