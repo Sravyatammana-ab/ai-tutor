@@ -20,7 +20,7 @@ class VectorStoreService:
     """Wrapper around Qdrant client for vector storage and retrieval."""
 
     _shared_client: Optional[QdrantClient] = None
-    _collection_initialized: bool = False
+    _checked_collections: set = set()
 
     def __init__(self) -> None:
         if not Config.QDRANT_URL:
@@ -44,8 +44,19 @@ class VectorStoreService:
     #  COLLECTION CREATION — uses vector name "default"
     ##########################################################################
     def create_collection_if_not_exists(self) -> None:
-        if VectorStoreService._collection_initialized:
-            return
+        # Use collection name as key for checked collections
+        if self.collection_name in VectorStoreService._checked_collections:
+            # Skip if we've already verified this collection exists
+            try:
+                collections = self.client.get_collections()
+                names = [c.name for c in collections.collections]
+                if self.collection_name in names:
+                    return
+                # Collection was deleted, remove from checked set
+                VectorStoreService._checked_collections.discard(self.collection_name)
+            except Exception:
+                # If we can't check, proceed to creation attempt
+                VectorStoreService._checked_collections.discard(self.collection_name)
 
         try:
             collections = self.client.get_collections()
@@ -57,6 +68,7 @@ class VectorStoreService:
         # CREATE COLLECTION ONLY IF IT DOES NOT EXIST
         if self.collection_name not in names:
             try:
+                # ALWAYS create collection with named vector "default"
                 self.client.create_collection(
                     collection_name=self.collection_name,
                     vectors_config={
@@ -66,7 +78,7 @@ class VectorStoreService:
                         )
                     }
                 )
-                print(f"✓ Created collection '{self.collection_name}' with vector_name='default'")
+                print(f"✓ Created collection '{self.collection_name}' with vector_name='default' (size={self.vector_size}, distance=Cosine)")
             except Exception as e:
                 print(f"✗ Error creating collection: {e}")
                 raise
@@ -81,7 +93,8 @@ class VectorStoreService:
         else:
             print(f"✓ Collection '{self.collection_name}' already exists")
 
-        VectorStoreService._collection_initialized = True
+        # Mark as checked
+        VectorStoreService._checked_collections.add(self.collection_name)
 
     ##########################################################################
     #  PAYLOAD INDEX
@@ -104,10 +117,11 @@ class VectorStoreService:
         if not points:
             return
 
+        # ALWAYS use named vector "default" for upserting
         structs = [
             PointStruct(
                 id=p["id"],
-                vector={"default": p["vector"]},
+                vector={"default": p["vector"]},  # Named vector "default"
                 payload=p["payload"]
             )
             for p in points
@@ -164,10 +178,11 @@ class VectorStoreService:
 
         query_filter = self._build_filter(filter_conditions)
 
+        # ALWAYS use vector_name="default" explicitly
         results = self.client.search(
             collection_name=self.collection_name,
             query_vector=query_vector,
-            vector_name="default",
+            vector_name="default",  # Named vector "default"
             limit=limit,
             query_filter=query_filter,
             with_payload=True,

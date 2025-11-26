@@ -45,16 +45,19 @@ except Exception as e:
 # Create new collection
 try:
     print(f"Creating new collection: {QDRANT_COLLECTION_NAME}")
+    print(f"Using named vector 'default' with size={QDRANT_VECTOR_SIZE}, distance=Cosine")
     client.create_collection(
         collection_name=QDRANT_COLLECTION_NAME,
-        vectors_config=VectorParams(
-            size=QDRANT_VECTOR_SIZE,
-            distance=Distance.COSINE,
-        ),
+        vectors_config={
+            "default": VectorParams(
+                size=QDRANT_VECTOR_SIZE,
+                distance=Distance.COSINE,
+            )
+        },
     )
-    print("✓ Collection created successfully!")
+    print("✓ Collection created successfully with vector_name='default'!")
     print("\n⚠ IMPORTANT: You need to re-upload your documents now.")
-    print("The old collection with vector_name config has been deleted.")
+    print("The old collection has been deleted and recreated with named vector config.")
 except Exception as e:
     print(f"Error creating collection: {e}")
     exit(1)

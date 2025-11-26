@@ -44,6 +44,7 @@ def upload_document():
 
         # Lazy load vector store on demand (to avoid memory crash)
         vector_store = VectorStoreService()
+        # Ensure collection exists with named vector "default" before any operations
         vector_store.create_collection_if_not_exists()
 
         existing_docs = vector_store.search_by_hash(file_hash)
