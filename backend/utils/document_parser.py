@@ -6,8 +6,10 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 try:
     from utils.azure_ocr import AzureOCRService
-except ImportError:
+except ImportError as e:
     AzureOCRService = None
+    print(f"ERROR: Failed to import AzureOCRService: {e}")
+    print("Please install: pip install azure-ai-documentintelligence azure-core")
 
 try:
     from docx import Document
@@ -23,6 +25,8 @@ def extract_text_from_docx(path: str) -> str:
     doc = Document(path)
     paragraphs = [p.text for p in doc.paragraphs if p.text.strip() != ""]
     return "\n".join(paragraphs)
+
+
 
 
 def compute_file_hash(file_path: str) -> str:
@@ -88,35 +92,46 @@ def get_azure_service():
     """
     Lazily create a single Azure Document Intelligence client.
     Prevents re-initializing heavy SDK objects per request.
+    AZURE IS REQUIRED - will raise error if not available.
     """
     global _azure_service
     if _azure_service is not None:
         return _azure_service
+    
+    # Azure is REQUIRED - fail if not available
     if not AzureOCRService:
-        print("ERROR: AzureOCRService class not available (azure-ai-documentintelligence not installed?)")
-        return None
+        raise ValueError(
+            "AzureOCRService is not available. "
+            "Please install: pip install azure-ai-documentintelligence azure-core"
+        )
     
     # Check environment variables before attempting initialization
     from config import Config
-    if not Config.AZURE_ENDPOINT or not Config.AZURE_KEY:
-        print(f"ERROR: Azure configuration missing:")
-        print(f"  AZURE_ENDPOINT: {'SET' if Config.AZURE_ENDPOINT else 'NOT SET'}")
-        print(f"  AZURE_KEY: {'SET' if Config.AZURE_KEY else 'NOT SET'}")
-        print("Please set these in Render Dashboard → Environment tab (for production) or .env file (for local)")
-        return None
+    
+    endpoint_set = bool(Config.AZURE_ENDPOINT and Config.AZURE_ENDPOINT.strip())
+    key_set = bool(Config.AZURE_KEY and Config.AZURE_KEY.strip())
+    
+    if not endpoint_set or not key_set:
+        error_msg = "Azure Document Intelligence is REQUIRED but not configured.\n"
+        error_msg += f"  AZURE_ENDPOINT: {'SET' if endpoint_set else 'NOT SET or EMPTY'}\n"
+        error_msg += f"  AZURE_KEY: {'SET' if key_set else 'NOT SET or EMPTY'}\n"
+        error_msg += "Please set both AZURE_ENDPOINT and AZURE_KEY in your .env file or environment variables."
+        raise ValueError(error_msg)
     
     try:
         _azure_service = AzureOCRService()
         print("✓ Azure Document Intelligence service initialized successfully")
     except Exception as e:
         import traceback
-        print(f"ERROR: Azure Document Intelligence service initialization failed: {e}")
+        error_msg = f"Failed to initialize Azure Document Intelligence: {str(e)}\n"
+        error_msg += "Please verify:\n"
+        error_msg += "  1. AZURE_ENDPOINT and AZURE_KEY are set correctly\n"
+        error_msg += "  2. Values are valid (no extra spaces, correct format)\n"
+        error_msg += "  3. Azure service is accessible"
+        print(f"ERROR: {error_msg}")
         print(f"Traceback: {traceback.format_exc()}")
-        print("Please check:")
-        print("  1. AZURE_ENDPOINT and AZURE_KEY are set in Render Dashboard → Environment tab")
-        print("  2. Values are correct (no extra spaces, correct format)")
-        print("  3. Azure service is accessible from Render")
-        _azure_service = None
+        raise ValueError(error_msg) from e
+    
     return _azure_service
 
 
@@ -132,8 +147,9 @@ class DocumentParser:
             separators=["\n\n", "\n", ".", "!", "?"]
         )
         
-        # Azure Document Intelligence service will be lazy-loaded
-        self.azure_ocr_service = None
+        # Azure Document Intelligence service - initialized only once via get_azure_service()
+        self._azure_ocr_service_initialized = False
+        self._azure_ocr_service = None
     
     def parse_document(self, file_path: str, file_ext: str) -> Tuple[str, Dict]:
         """
@@ -161,24 +177,31 @@ class DocumentParser:
             raise ValueError(f"Unsupported file type: {file_ext}")
     
     def _parse_pdf(self, file_path: str, metadata: Dict) -> Tuple[str, Dict]:
-        """Parse PDF using Azure Document Intelligence"""
-        if not self.azure_ocr_service:
-            self.azure_ocr_service = get_azure_service()
-        if not self.azure_ocr_service:
+        """Parse PDF using Azure Document Intelligence ONLY - no fallback"""
+        # Initialize Azure service only once - will raise error if not available
+        if not self._azure_ocr_service_initialized:
+            print(f"[DocumentParser] Initializing Azure Document Intelligence service...")
+            self._azure_ocr_service = get_azure_service()  # Will raise if Azure unavailable
+            self._azure_ocr_service_initialized = True
+        
+        if not self._azure_ocr_service:
             raise ValueError(
                 "Azure Document Intelligence service is not available. "
-                "Please configure AZURE_ENDPOINT and AZURE_KEY in your .env file."
+                "PDF extraction requires Azure OCR - no fallback available."
             )
         
+        print(f"[DocumentParser] Using Azure Document Intelligence for PDF extraction...")
         try:
-            # Extract text using Azure Document Intelligence
-            text_content = self.azure_ocr_service.extract_text(file_path)
+            # Extract text using Azure Document Intelligence - ONLY method
+            text_content = self._azure_ocr_service.extract_text(file_path)
             
             if not text_content or not text_content.strip():
                 raise ValueError(
-                    "Failed to extract text using Azure Document Intelligence - document appears empty or contains no readable text. "
-                    "Please ensure the PDF contains readable text."
+                    "Azure Document Intelligence returned empty text. "
+                    "The PDF may be empty or contain no readable text."
                 )
+            
+            print(f"[DocumentParser] ✓ Azure Document Intelligence extraction successful ({len(text_content)} chars)")
             
             # Clean and normalize text
             text_content = self._clean_text(text_content)
@@ -187,7 +210,7 @@ class DocumentParser:
             structure_info = detect_chapters_and_units(text_content)
             metadata.update(structure_info)
             
-            # Estimate page count based on text length (rough estimate: ~500 words per page)
+            # Estimate page count based on text length
             word_count = len(text_content.split())
             estimated_pages = max(1, word_count // 500)
             metadata['page_count'] = estimated_pages
@@ -195,12 +218,15 @@ class DocumentParser:
             
             return text_content, metadata
             
-        except ValueError:
+        except ValueError as e:
             # Re-raise ValueError as-is (already formatted)
+            print(f"[DocumentParser] ✗ Azure Document Intelligence extraction failed: {str(e)}")
             raise
         except Exception as e:
-            error_msg = str(e)
-            raise ValueError(f"Failed to extract text using Azure Document Intelligence: {error_msg}")
+            # Wrap any other exception with Azure error message
+            error_msg = f"Azure OCR failed: {str(e)}"
+            print(f"[DocumentParser] ✗ {error_msg}")
+            raise ValueError(error_msg) from e
     
     def _parse_docx(self, file_path: str, metadata: Dict) -> Tuple[str, Dict]:
         """Parse DOCX file using python-docx"""

@@ -1,10 +1,19 @@
 import os
 from typing import Optional
-from azure.core.credentials import AzureKeyCredential
-from azure.ai.documentintelligence import (
-    DocumentIntelligenceClient,
-    DocumentIntelligenceApiVersion
-)
+
+# Strict import with clear error if package not installed
+try:
+    from azure.ai.documentintelligence import (
+        DocumentIntelligenceClient,
+        DocumentIntelligenceApiVersion
+    )
+    from azure.core.credentials import AzureKeyCredential
+except ImportError as e:
+    raise ImportError(
+        "azure-ai-documentintelligence package is not installed. "
+        "Please install: pip install azure-ai-documentintelligence azure-core"
+    ) from e
+
 from config import Config
 
 
@@ -16,36 +25,67 @@ class AzureOCRService:
         self.endpoint = Config.AZURE_ENDPOINT
         self.key = Config.AZURE_KEY
         
-        # Debug: Print what we got (without exposing the key)
-        print(f"DEBUG: AZURE_ENDPOINT = {'SET' if self.endpoint else 'NOT SET'}")
-        print(f"DEBUG: AZURE_KEY = {'SET' if self.key else 'NOT SET'}")
-        if self.endpoint:
-            print(f"DEBUG: Endpoint value: {self.endpoint[:50]}...")  # First 50 chars only
+        # Strong validation: Check if values are actually set (not just truthy)
+        endpoint_set = bool(self.endpoint and self.endpoint.strip())
+        key_set = bool(self.key and self.key.strip())
         
-        if not self.endpoint:
+        # Masked logging: Show masked endpoint and first/last 4 chars of key
+        if endpoint_set:
+            endpoint_masked = self.endpoint[:40] + "..." if len(self.endpoint) > 40 else self.endpoint
+            endpoint_masked = endpoint_masked.rstrip('/')
+            print(f"✓ AZURE_ENDPOINT loaded: {endpoint_masked}")
+        else:
+            print("✗ AZURE_ENDPOINT is NOT SET or EMPTY")
+        
+        if key_set:
+            # Show first 4 and last 4 characters of key (masked)
+            if len(self.key) > 8:
+                key_masked = self.key[:4] + "..." + self.key[-4:]
+            else:
+                key_masked = "***" + self.key[-4:] if len(self.key) > 4 else "***"
+            print(f"✓ AZURE_KEY loaded: {key_masked} (length: {len(self.key)})")
+        else:
+            print("✗ AZURE_KEY is NOT SET or EMPTY")
+        
+        # Clear error if values are missing
+        if not endpoint_set:
             raise ValueError(
-                "AZURE_ENDPOINT is required. "
-                "Please set AZURE_ENDPOINT in your environment variables (Render Dashboard → Environment tab)."
+                "AZURE_ENDPOINT is required but not configured. "
+                "Please set AZURE_ENDPOINT in your .env file or environment variables. "
+                "Value must not be empty or whitespace-only."
             )
         
-        if not self.key:
+        if not key_set:
             raise ValueError(
-                "AZURE_KEY is required. "
-                "Please set AZURE_KEY in your environment variables (Render Dashboard → Environment tab)."
+                "AZURE_KEY is required but not configured. "
+                "Please set AZURE_KEY in your .env file or environment variables. "
+                "Value must not be empty or whitespace-only."
             )
         
-        # Remove trailing slash if present
-        self.endpoint = self.endpoint.rstrip('/')
+        # Ensure endpoint is properly formatted (remove trailing slash for SDK)
+        self.endpoint = self.endpoint.strip().rstrip('/')
+        
+        # Validate endpoint format - MUST start with https://
+        if not self.endpoint.startswith('https://'):
+            raise ValueError(
+                f"AZURE_ENDPOINT must start with https://. "
+                f"Got: {self.endpoint[:50]}..."
+            )
         
         try:
             # Initialize Document Intelligence client
             self.client = DocumentIntelligenceClient(
                 endpoint=self.endpoint,
-                credential=AzureKeyCredential(self.key),
+                credential=AzureKeyCredential(self.key.strip()),
                 api_version=DocumentIntelligenceApiVersion.V2023_10_31
             )
+            print("✓ Azure Document Intelligence client initialized successfully")
         except Exception as e:
-            raise ValueError(f"Failed to initialize Azure Document Intelligence client: {e}")
+            error_msg = str(e)
+            raise ValueError(
+                f"Failed to initialize Azure Document Intelligence client: {error_msg}. "
+                f"Please verify AZURE_ENDPOINT and AZURE_KEY are correct."
+            )
     
     def extract_text(self, file_path: str) -> str:
         """

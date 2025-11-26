@@ -72,8 +72,14 @@ class Config:
     TTS_MAX_CHARACTERS = int(_get_env('TTS_MAX_CHARACTERS', 4000))
     
     # Azure Document Intelligence Configuration
+    # Note: Azure SDK expects endpoint without trailing slash, azure_ocr.py will handle formatting
     AZURE_ENDPOINT = _get_env('AZURE_ENDPOINT')
     AZURE_KEY = _get_env('AZURE_KEY')
+    
+    # Log Azure env loading status
+    endpoint_status = "SET" if (AZURE_ENDPOINT and AZURE_ENDPOINT.strip()) else "NOT SET"
+    key_status = "SET" if (AZURE_KEY and AZURE_KEY.strip()) else "NOT SET"
+    print(f"Azure ENV loaded: endpoint {endpoint_status}, key {key_status}")
     
     # Azure Speech Service Configuration
     AZURE_SPEECH_KEY = _get_env('AZURE_SPEECH_KEY') or _get_env('AZURE_KEY')  # Fallback to AZURE_KEY if AZURE_SPEECH_KEY not set

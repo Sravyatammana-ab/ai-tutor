@@ -71,14 +71,37 @@ def upload_document():
         os.rename(temp_path, final_path)
 
         # Lazy-load Document Parser to avoid startup crash
+        print(f"[upload_document] Initializing DocumentParser for file: {filename} ({file_ext})")
+        
+        # Log Azure-only mode before parsing
+        if file_ext == 'pdf':
+            print(f"[upload_document] Using Azure OCR only — no fallback.")
+        
         document_parser = DocumentParser()
 
         try:
+            print(f"[upload_document] Starting document parsing for: {filename}")
             text_content, metadata = document_parser.parse_document(final_path, file_ext)
-        except Exception as e:
+            extraction_source = metadata.get('source', 'unknown')
+            print(f"[upload_document] ✓ Document parsing successful using: {extraction_source}")
+            print(f"[upload_document] Extracted text length: {len(text_content)} characters")
+            print(f"[upload_document] Estimated pages: {metadata.get('page_count', 'N/A')}")
+        except ValueError as e:
+            # Azure OCR errors - return exact error message
+            error_msg = str(e)
+            print(f"[upload_document] ✗ Azure OCR failed: {error_msg}")
             try: os.remove(final_path)
             except: pass
-            return jsonify({'error': f'Failed to extract text: {str(e)}'}), 400
+            return jsonify({'error': f'Azure OCR failed: {error_msg}'}), 400
+        except Exception as e:
+            import traceback
+            error_msg = str(e)
+            error_traceback = traceback.format_exc()
+            print(f"[upload_document] ✗ Document parsing failed: {error_msg}")
+            print(f"[upload_document] Exception traceback:\n{error_traceback}")
+            try: os.remove(final_path)
+            except: pass
+            return jsonify({'error': f'Azure OCR failed: {error_msg}'}), 400
 
         if not text_content.strip():
             try: os.remove(final_path)
