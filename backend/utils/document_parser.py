@@ -93,15 +93,29 @@ def get_azure_service():
     if _azure_service is not None:
         return _azure_service
     if not AzureOCRService:
+        print("ERROR: AzureOCRService class not available (azure-ai-documentintelligence not installed?)")
         return None
+    
+    # Check environment variables before attempting initialization
+    from config import Config
+    if not Config.AZURE_ENDPOINT or not Config.AZURE_KEY:
+        print(f"ERROR: Azure configuration missing:")
+        print(f"  AZURE_ENDPOINT: {'SET' if Config.AZURE_ENDPOINT else 'NOT SET'}")
+        print(f"  AZURE_KEY: {'SET' if Config.AZURE_KEY else 'NOT SET'}")
+        print("Please set these in Render Dashboard → Environment tab (for production) or .env file (for local)")
+        return None
+    
     try:
         _azure_service = AzureOCRService()
-        print("Azure Document Intelligence service initialized successfully")
+        print("✓ Azure Document Intelligence service initialized successfully")
     except Exception as e:
         import traceback
-        print(f"Warning: Azure Document Intelligence service initialization failed: {e}")
+        print(f"ERROR: Azure Document Intelligence service initialization failed: {e}")
         print(f"Traceback: {traceback.format_exc()}")
-        print("PDF extraction will not be available. Please configure AZURE_ENDPOINT and AZURE_KEY in your .env file.")
+        print("Please check:")
+        print("  1. AZURE_ENDPOINT and AZURE_KEY are set in Render Dashboard → Environment tab")
+        print("  2. Values are correct (no extra spaces, correct format)")
+        print("  3. Azure service is accessible from Render")
         _azure_service = None
     return _azure_service
 

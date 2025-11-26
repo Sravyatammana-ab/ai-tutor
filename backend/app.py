@@ -43,6 +43,21 @@ def root():
 @app.route('/api/health', methods=['GET', 'OPTIONS'])
 def health_check():
     return jsonify({'status': 'healthy', 'message': 'AI Tutor API is running'})
+
+@app.route('/api/debug/config', methods=['GET'])
+def debug_config():
+    """Debug endpoint to check environment variables (without exposing sensitive values)"""
+    import os
+    from config import Config
+    
+    return jsonify({
+        'azure_endpoint_set': bool(Config.AZURE_ENDPOINT),
+        'azure_endpoint_preview': Config.AZURE_ENDPOINT[:50] + '...' if Config.AZURE_ENDPOINT and len(Config.AZURE_ENDPOINT) > 50 else (Config.AZURE_ENDPOINT if Config.AZURE_ENDPOINT else None),
+        'azure_key_set': bool(Config.AZURE_KEY),
+        'azure_key_length': len(Config.AZURE_KEY) if Config.AZURE_KEY else 0,
+        'env_azure_endpoint': bool(os.getenv('AZURE_ENDPOINT')),
+        'env_azure_key': bool(os.getenv('AZURE_KEY')),
+    })
     
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))

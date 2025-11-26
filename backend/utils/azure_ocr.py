@@ -16,16 +16,22 @@ class AzureOCRService:
         self.endpoint = Config.AZURE_ENDPOINT
         self.key = Config.AZURE_KEY
         
+        # Debug: Print what we got (without exposing the key)
+        print(f"DEBUG: AZURE_ENDPOINT = {'SET' if self.endpoint else 'NOT SET'}")
+        print(f"DEBUG: AZURE_KEY = {'SET' if self.key else 'NOT SET'}")
+        if self.endpoint:
+            print(f"DEBUG: Endpoint value: {self.endpoint[:50]}...")  # First 50 chars only
+        
         if not self.endpoint:
             raise ValueError(
                 "AZURE_ENDPOINT is required. "
-                "Please set AZURE_ENDPOINT in your .env file."
+                "Please set AZURE_ENDPOINT in your environment variables (Render Dashboard → Environment tab)."
             )
         
         if not self.key:
             raise ValueError(
                 "AZURE_KEY is required. "
-                "Please set AZURE_KEY in your .env file."
+                "Please set AZURE_KEY in your environment variables (Render Dashboard → Environment tab)."
             )
         
         # Remove trailing slash if present
