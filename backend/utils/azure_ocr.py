@@ -2,16 +2,29 @@ import os
 from typing import Optional
 
 # Strict import with clear error if package not installed
+import sys
+import os
+
 try:
-    from azure.ai.documentintelligence import (
-        DocumentIntelligenceClient,
-        DocumentIntelligenceApiVersion
-    )
+    from azure.ai.documentintelligence import DocumentIntelligenceClient
     from azure.core.credentials import AzureKeyCredential
 except ImportError as e:
+    python_exe = sys.executable
+    python_path = sys.path
+    error_detail = str(e)
+    
+    print(f"[ERROR] Import Error Details:")
+    print(f"  Python executable: {python_exe}")
+    print(f"  Python version: {sys.version}")
+    print(f"  Error: {error_detail}")
+    print(f"  First few paths: {python_path[:3]}")
+    
     raise ImportError(
-        "azure-ai-documentintelligence package is not installed. "
-        "Please install: pip install azure-ai-documentintelligence azure-core"
+        f"azure-ai-documentintelligence package is not installed in the current Python environment.\n"
+        f"Python executable: {python_exe}\n"
+        f"Please install using the same Python:\n"
+        f"  {python_exe} -m pip install azure-ai-documentintelligence azure-core\n"
+        f"Or activate your virtual environment first if you're using one."
     ) from e
 
 from config import Config
@@ -33,9 +46,9 @@ class AzureOCRService:
         if endpoint_set:
             endpoint_masked = self.endpoint[:40] + "..." if len(self.endpoint) > 40 else self.endpoint
             endpoint_masked = endpoint_masked.rstrip('/')
-            print(f"✓ AZURE_ENDPOINT loaded: {endpoint_masked}")
+            print(f"[OK] AZURE_ENDPOINT loaded: {endpoint_masked}")
         else:
-            print("✗ AZURE_ENDPOINT is NOT SET or EMPTY")
+            print("[ERROR] AZURE_ENDPOINT is NOT SET or EMPTY")
         
         if key_set:
             # Show first 4 and last 4 characters of key (masked)
@@ -43,9 +56,9 @@ class AzureOCRService:
                 key_masked = self.key[:4] + "..." + self.key[-4:]
             else:
                 key_masked = "***" + self.key[-4:] if len(self.key) > 4 else "***"
-            print(f"✓ AZURE_KEY loaded: {key_masked} (length: {len(self.key)})")
+            print(f"[OK] AZURE_KEY loaded: {key_masked} (length: {len(self.key)})")
         else:
-            print("✗ AZURE_KEY is NOT SET or EMPTY")
+            print("[ERROR] AZURE_KEY is NOT SET or EMPTY")
         
         # Clear error if values are missing
         if not endpoint_set:
@@ -74,12 +87,13 @@ class AzureOCRService:
         
         try:
             # Initialize Document Intelligence client
+            # API version is passed as a string parameter (defaults to latest if not specified)
             self.client = DocumentIntelligenceClient(
                 endpoint=self.endpoint,
                 credential=AzureKeyCredential(self.key.strip()),
-                api_version=DocumentIntelligenceApiVersion.V2023_10_31
+                api_version="2023-10-31-preview"  # Using string API version
             )
-            print("✓ Azure Document Intelligence client initialized successfully")
+            print("[OK] Azure Document Intelligence client initialized successfully")
         except Exception as e:
             error_msg = str(e)
             raise ValueError(

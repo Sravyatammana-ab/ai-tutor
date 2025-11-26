@@ -83,13 +83,13 @@ def upload_document():
             print(f"[upload_document] Starting document parsing for: {filename}")
             text_content, metadata = document_parser.parse_document(final_path, file_ext)
             extraction_source = metadata.get('source', 'unknown')
-            print(f"[upload_document] ✓ Document parsing successful using: {extraction_source}")
+            print(f"[upload_document] [OK] Document parsing successful using: {extraction_source}")
             print(f"[upload_document] Extracted text length: {len(text_content)} characters")
             print(f"[upload_document] Estimated pages: {metadata.get('page_count', 'N/A')}")
         except ValueError as e:
             # Azure OCR errors - return exact error message
             error_msg = str(e)
-            print(f"[upload_document] ✗ Azure OCR failed: {error_msg}")
+            print(f"[upload_document] [ERROR] Azure OCR failed: {error_msg}")
             try: os.remove(final_path)
             except: pass
             return jsonify({'error': f'Azure OCR failed: {error_msg}'}), 400
@@ -97,7 +97,7 @@ def upload_document():
             import traceback
             error_msg = str(e)
             error_traceback = traceback.format_exc()
-            print(f"[upload_document] ✗ Document parsing failed: {error_msg}")
+            print(f"[upload_document] [ERROR] Document parsing failed: {error_msg}")
             print(f"[upload_document] Exception traceback:\n{error_traceback}")
             try: os.remove(final_path)
             except: pass

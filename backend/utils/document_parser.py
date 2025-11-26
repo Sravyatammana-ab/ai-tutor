@@ -7,9 +7,12 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 try:
     from utils.azure_ocr import AzureOCRService
 except ImportError as e:
+    import sys
     AzureOCRService = None
-    print(f"ERROR: Failed to import AzureOCRService: {e}")
-    print("Please install: pip install azure-ai-documentintelligence azure-core")
+    print(f"[ERROR] Failed to import AzureOCRService: {e}")
+    print(f"Python executable being used: {sys.executable}")
+    print(f"To fix this, run: {sys.executable} -m pip install azure-ai-documentintelligence azure-core")
+    print("Or activate your virtual environment and run: pip install azure-ai-documentintelligence azure-core")
 
 try:
     from docx import Document
@@ -99,10 +102,14 @@ def get_azure_service():
         return _azure_service
     
     # Azure is REQUIRED - fail if not available
-    if not AzureOCRService:
+    if AzureOCRService is None:
+        import sys
         raise ValueError(
-            "AzureOCRService is not available. "
-            "Please install: pip install azure-ai-documentintelligence azure-core"
+            f"AzureOCRService is not available. "
+            f"The azure-ai-documentintelligence package could not be imported.\n"
+            f"Python executable: {sys.executable}\n"
+            f"Please install using: {sys.executable} -m pip install azure-ai-documentintelligence azure-core\n"
+            f"Or activate your virtual environment and run: pip install azure-ai-documentintelligence azure-core"
         )
     
     # Check environment variables before attempting initialization
@@ -120,7 +127,7 @@ def get_azure_service():
     
     try:
         _azure_service = AzureOCRService()
-        print("✓ Azure Document Intelligence service initialized successfully")
+        print("[OK] Azure Document Intelligence service initialized successfully")
     except Exception as e:
         import traceback
         error_msg = f"Failed to initialize Azure Document Intelligence: {str(e)}\n"
@@ -181,13 +188,28 @@ class DocumentParser:
         # Initialize Azure service only once - will raise error if not available
         if not self._azure_ocr_service_initialized:
             print(f"[DocumentParser] Initializing Azure Document Intelligence service...")
-            self._azure_ocr_service = get_azure_service()  # Will raise if Azure unavailable
-            self._azure_ocr_service_initialized = True
+            try:
+                self._azure_ocr_service = get_azure_service()  # Will raise if Azure unavailable
+                self._azure_ocr_service_initialized = True
+            except ValueError as e:
+                # Re-raise with clear message
+                error_msg = str(e)
+                print(f"[DocumentParser] [ERROR] Failed to get Azure service: {error_msg}")
+                raise ValueError(f"Azure OCR failed: {error_msg}") from e
+            except Exception as e:
+                import sys
+                error_msg = f"Unexpected error initializing Azure service: {str(e)}\nPython: {sys.executable}"
+                print(f"[DocumentParser] [ERROR] {error_msg}")
+                raise ValueError(f"Azure OCR failed: {error_msg}") from e
         
         if not self._azure_ocr_service:
+            import sys
             raise ValueError(
-                "Azure Document Intelligence service is not available. "
-                "PDF extraction requires Azure OCR - no fallback available."
+                f"Azure Document Intelligence service is not available. "
+                f"This should not happen - please check:\n"
+                f"1. Python executable: {sys.executable}\n"
+                f"2. Azure packages installed: {sys.executable} -m pip list | findstr azure\n"
+                f"3. Environment variables are set correctly"
             )
         
         print(f"[DocumentParser] Using Azure Document Intelligence for PDF extraction...")
@@ -201,7 +223,7 @@ class DocumentParser:
                     "The PDF may be empty or contain no readable text."
                 )
             
-            print(f"[DocumentParser] ✓ Azure Document Intelligence extraction successful ({len(text_content)} chars)")
+            print(f"[DocumentParser] [OK] Azure Document Intelligence extraction successful ({len(text_content)} chars)")
             
             # Clean and normalize text
             text_content = self._clean_text(text_content)
@@ -220,12 +242,12 @@ class DocumentParser:
             
         except ValueError as e:
             # Re-raise ValueError as-is (already formatted)
-            print(f"[DocumentParser] ✗ Azure Document Intelligence extraction failed: {str(e)}")
+            print(f"[DocumentParser] [ERROR] Azure Document Intelligence extraction failed: {str(e)}")
             raise
         except Exception as e:
             # Wrap any other exception with Azure error message
             error_msg = f"Azure OCR failed: {str(e)}"
-            print(f"[DocumentParser] ✗ {error_msg}")
+            print(f"[DocumentParser] [ERROR] {error_msg}")
             raise ValueError(error_msg) from e
     
     def _parse_docx(self, file_path: str, metadata: Dict) -> Tuple[str, Dict]:
