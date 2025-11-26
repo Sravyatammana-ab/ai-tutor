@@ -164,13 +164,38 @@ class VectorStoreService:
         if not filter_conditions:
             return None
 
-        conditions = [
-            FieldCondition(
-                key=key,
-                match=MatchValue(value=value)
-            )
-            for key, value in filter_conditions.items()
-        ]
+        conditions = []
+        for key, value in filter_conditions.items():
+            # Validate value is a primitive type (str, int, bool, float)
+            # MatchValue only accepts primitive types, not dicts or lists
+            if isinstance(value, (dict, list)):
+                # If value is a dict/list, log error and skip this condition
+                print(f"[WARNING] Filter value for key '{key}' is {type(value).__name__}, expected primitive. Value: {value}")
+                continue
+            
+            # Ensure value is a valid primitive type for MatchValue
+            if value is None:
+                print(f"[WARNING] Filter value for key '{key}' is None, skipping")
+                continue
+            
+            # Convert to string if needed (MatchValue accepts str, int, bool, float)
+            if not isinstance(value, (str, int, bool, float)):
+                value = str(value)
+            
+            try:
+                conditions.append(
+                    FieldCondition(
+                        key=key,
+                        match=MatchValue(value=value)
+                    )
+                )
+            except Exception as e:
+                print(f"[ERROR] Failed to create filter condition for key '{key}' with value {value}: {e}")
+                continue
+        
+        if not conditions:
+            return None
+        
         return Filter(must=conditions)
 
     def search_similar(self, query_vector: List[float], limit: int = 5, filter_conditions: Optional[Dict] = None):

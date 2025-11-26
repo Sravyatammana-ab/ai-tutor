@@ -79,13 +79,28 @@ def send_message():
     try:
         data = request.json
         user_message = (data.get('message') or '').strip()
-        document_id = data.get('document_id')
+        document_id_raw = data.get('document_id')
         language = data.get('language', 'en')
         session_id = data.get('session_id')
         history_from_client = data.get('history', [])
         
         if not user_message:
             return jsonify({'error': 'No message provided'}), 400
+        
+        if not document_id_raw:
+            return jsonify({'error': 'No document_id provided'}), 400
+        
+        # Validate document_id is a string, not a dict
+        if isinstance(document_id_raw, dict):
+            # If document_id is a dict, try to extract the actual ID
+            print(f"[WARNING] document_id is a dict: {document_id_raw}")
+            document_id = document_id_raw.get('document_id') or document_id_raw.get('id')
+            if not document_id or isinstance(document_id, dict):
+                return jsonify({'error': 'Invalid document_id format. Expected string UUID.'}), 400
+        elif not isinstance(document_id_raw, str):
+            document_id = str(document_id_raw)
+        else:
+            document_id = document_id_raw.strip()
         
         if not document_id:
             return jsonify({'error': 'No document_id provided'}), 400
@@ -379,8 +394,22 @@ def get_suggestions():
     """
     try:
         data = request.json
-        document_id = data.get('document_id')
+        document_id_raw = data.get('document_id')
         language = data.get('language', 'en')
+        
+        if not document_id_raw:
+            return jsonify({'error': 'No document_id provided'}), 400
+        
+        # Validate document_id is a string, not a dict
+        if isinstance(document_id_raw, dict):
+            print(f"[WARNING] document_id is a dict in suggestions: {document_id_raw}")
+            document_id = document_id_raw.get('document_id') or document_id_raw.get('id')
+            if not document_id or isinstance(document_id, dict):
+                return jsonify({'error': 'Invalid document_id format. Expected string UUID.'}), 400
+        elif not isinstance(document_id_raw, str):
+            document_id = str(document_id_raw)
+        else:
+            document_id = document_id_raw.strip()
         
         if not document_id:
             return jsonify({'error': 'No document_id provided'}), 400
