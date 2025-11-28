@@ -6,6 +6,7 @@
   width: 100%;
   max-width: 640px;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .upload-container {
@@ -200,6 +201,27 @@
   background: #cbd5e0;
 }
 
+@media (max-width: 1024px) {
+  .file-upload {
+    width: 90%;
+    max-width: 500px;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+
+  .upload-container h2 {
+    font-size: 1.4rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  .upload-container p {
+    font-size: 0.9rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+}
+
 @media (max-width: 768px) {
   .file-upload {
     padding: 1.5rem;
@@ -216,11 +238,15 @@
   .upload-container h2 {
     font-size: 1.5rem;
     margin-bottom: 0.5rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
   }
 
   .upload-container p {
     font-size: 0.95rem;
     margin-bottom: 1.5rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
   }
 
   .upload-box {

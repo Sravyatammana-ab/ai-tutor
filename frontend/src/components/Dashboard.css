@@ -283,26 +283,94 @@
   }
 
   .dashboard-header {
-    padding: 1rem 2rem;
+    padding: 1rem 1.5rem;
+    height: auto;
+    min-height: auto;
+  }
+
+  /* Ensure mobile header stays hidden on medium screens */
+  .header-mobile {
+    display: none;
+  }
+
+  .header-desktop {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 0;
+  }
+
+  .header-left {
+    width: 100%;
+    justify-content: center;
+    order: 1;
+  }
+
+  .logo-section {
+    justify-content: center;
+  }
+
+  .dashboard-logo {
+    height: 40px; /* Slightly reduced from 45px */
+  }
+
+  .header-center {
+    width: 100%;
+    order: 2;
+    text-align: center;
+    min-width: 0;
+  }
+
+  .header-center h1 {
+    font-size: 1.7rem; /* Reduced by ~15% from 2rem */
+    white-space: normal;
+    word-wrap: break-word;
+  }
+
+  .header-center p {
+    font-size: 0.85rem; /* Reduced by ~6% from 0.9rem */
+    white-space: normal;
+    word-wrap: break-word;
+    padding: 0 0.5rem;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: center;
+    order: 3;
+    gap: 12px;
+  }
+
+  .header-user-pill {
+    font-size: 0.85rem; /* Reduced by ~6% from 0.9rem */
+    padding: 0.4rem 1rem;
+    max-width: none;
+  }
+
+  .btn-signout {
+    font-size: 0.85rem; /* Reduced by ~6% from 0.9rem */
+    padding: 0.65rem 1.25rem;
   }
 
   .dashboard-container {
     padding: 1.25rem;
-    margin-top: 90px; /* Space for sticky header */
+    margin-top: 0;
     align-items: flex-start;
+  }
+
+  .upload-section {
+    width: 100%;
+    max-width: 500px;
+    padding: 0 0.5rem;
+    box-sizing: border-box;
   }
 
   .chat-section.sidebar-open {
     margin-left: 0;
     max-width: 100%;
-  }
-
-  .header-center h1 {
-    font-size: 1.75rem;
-  }
-
-  .header-center p {
-    font-size: 0.85rem;
   }
 }
 
